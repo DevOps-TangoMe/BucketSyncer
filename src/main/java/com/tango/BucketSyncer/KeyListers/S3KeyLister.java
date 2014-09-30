@@ -1,5 +1,5 @@
 /**
- *  Copyright 2014 TangoMe Inc.
+ *  Copyright 2013 Jonathan Cobb
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.tango.BucketSyncer.*;
 import com.tango.BucketSyncer.ObjectSummaries.ObjectSummary;
 import com.tango.BucketSyncer.ObjectSummaries.S3_ObjectSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,9 @@ public class S3KeyLister extends KeyLister {
                 while (getSize() < maxQueueCapacity) {
                     if (listing.isTruncated()) {
                         listing = s3GetNextBatch();
-                        if (++counter % 100 == 0) context.getStats().logStats();
+                        if (++counter % 100 == 0) {
+                            context.getStats().logStats();
+                        }
                         synchronized (summaries) {
                             final List<S3ObjectSummary> objectSummaries = listing.getObjectSummaries();
                             summaries.addAll(objectSummaries);
@@ -93,11 +96,11 @@ public class S3KeyLister extends KeyLister {
                 }
             }
         } catch (Exception e) {
-            log.error("Error in run loop, KeyLister thread now exiting: ", e);
+            log.error("Error in run loop, KEY_LISTER thread now exiting: {}", e);
 
         } finally {
             if (verbose) {
-                log.info("KeyLister run loop finished");
+                log.info("KEY_LISTER run loop finished");
             }
             done.set(true);
         }
@@ -108,65 +111,72 @@ public class S3KeyLister extends KeyLister {
         final MirrorOptions options = context.getOptions();
         final boolean verbose = options.isVerbose();
         final int maxRetries = options.getMaxRetries();
+        ObjectListing listing = null;
 
         Exception lastException = null;
         for (int tries = 0; tries < maxRetries; tries++) {
             try {
                 context.getStats().getCount.incrementAndGet();
-                ObjectListing listing = client.listObjects(request);
+                listing = client.listObjects(request);
                 if (verbose) {
                     log.info("successfully got first batch of objects (on try # {})", tries);
                 }
-                return listing;
+                break;
             } catch (AmazonS3Exception e) {
-                if (e.getStatusCode() == 403) {
+                if (e.getStatusCode() == HttpStatus.SC_FORBIDDEN) {
                     if (verbose) {
-                        log.error("Please provide valid AWS credentials: ", e);
+                        log.error("Please provide valid AWS credentials: {}", e);
                     }
                 }
                 System.exit(1);
             } catch (Exception e) {
                 lastException = e;
-                log.warn("s3getFirstBatch: error listing (try # {}): ", tries, e);
+                log.warn("s3getFirstBatch: error listing (try # {}): {}", tries, e);
                 if (Sleep.sleep(50)) {
                     log.info("s3getFirstBatch: interrupted while waiting for next try");
                     break;
                 }
             }
         }
+        if(listing!= null){
+            return listing;
+        }else {
+            throw new
 
-        throw new
-
-                IllegalStateException("s3getFirstBatch: error listing: " + lastException, lastException);
-
+                    IllegalStateException("s3getFirstBatch: error listing: " + lastException, lastException);
+        }
     }
 
     private ObjectListing s3GetNextBatch() {
         final MirrorOptions options = context.getOptions();
         final boolean verbose = options.isVerbose();
         final int maxRetries = options.getMaxRetries();
-
+        ObjectListing next = null;
         for (int tries = 0; tries < maxRetries; tries++) {
             try {
                 context.getStats().getCount.incrementAndGet();
-                ObjectListing next = s3Client.listNextBatchOfObjects(listing);
+                next = s3Client.listNextBatchOfObjects(listing);
                 if (verbose) {
                     log.info("successfully got next batch of objects (on try # {})", tries);
                 }
-                return next;
+                break;
 
             } catch (AmazonS3Exception s3e) {
-                log.error("s3 exception listing objects (try # {}): ", tries, s3e);
+                log.error("s3 exception listing objects (try # {}): {}", tries, s3e);
 
             } catch (Exception e) {
-                log.error("unexpected exception listing objects (try # {}): ", tries, e);
+                log.error("unexpected exception listing objects (try # {}): {}", tries, e);
             }
             if (Sleep.sleep(50)) {
                 log.info("s3GetNextBatch: interrupted while waiting for next try");
                 break;
             }
         }
-        throw new IllegalStateException(String.format("Too many errors trying to list objects (maxRetries= %d)", maxRetries));
+        if(next != null){
+            return next;
+        }else {
+            throw new IllegalStateException(String.format("Too many errors trying to list objects (maxRetries= %d)", maxRetries));
+        }
 
     }
 

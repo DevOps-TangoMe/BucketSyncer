@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +16,7 @@
  */
 package com.tango.BucketSyncer.KeyJobs;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.*;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.media.MediaHttpUploader;
@@ -27,11 +29,12 @@ import com.google.common.collect.ImmutableMap;
 import com.tango.BucketSyncer.*;
 import com.tango.BucketSyncer.ObjectSummaries.ObjectSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-
+import org.apache.http.HttpStatus;
 
 @Slf4j
 public class S32GCSKeyCopyJob extends S32GCSKeyJob {
@@ -58,7 +61,9 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
         final MirrorOptions options = context.getOptions();
         final String key = summary.getKey();
         try {
-            if (!shouldTransfer()) return;
+            if (!shouldTransfer()) {
+                return;
+            }
             final ObjectMetadata sourceMetadata = getS3ObjectMetadata(options.getSourceBucket(), key, options);
             final AccessControlList objectAcl = getAccessControlList(options, key);
 
@@ -69,10 +74,12 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
                     context.getStats().objectsCopied.incrementAndGet();
                 } else {
                     context.getStats().copyErrors.incrementAndGet();
+                    //add fail-copied key to errorKeyList
+                    context.getStats().errorKeyList.add(key);
                 }
             }
         } catch (Exception e) {
-            log.error("error copying key: {}: ", key, e);
+            log.error("error copying key: {}: {}", key, e);
 
         } finally {
             synchronized (notifyLock) {
@@ -85,6 +92,7 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
     }
 
     boolean keyCopied(ObjectMetadata sourceMetadata, AccessControlList objectAcl) {
+        boolean copied = false;
         String key = summary.getKey();
         MirrorOptions options = context.getOptions();
         boolean verbose = options.isVerbose();
@@ -100,57 +108,76 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
             }
 
             //get object from S3
-            S3Object s3object = s3Client.getObject(new GetObjectRequest(
-                    options.getSourceBucket(), key));
-
-            InputStream inputStream = s3object.getObjectContent();
-
-            String type = s3object.getObjectMetadata().getContentType();
-            mediaContent = new InputStreamContent(type, inputStream);
-
-            String etag = s3object.getObjectMetadata().getETag();
-            StorageObject objectMetadata = new StorageObject()
-                    .setMetadata(ImmutableMap.of("Etag", etag));
-
-
-            Storage.Objects.Insert insertObject = null;
-            try {
-                insertObject = gcsClient.objects().insert(options.getDestinationBucket(), objectMetadata, mediaContent);
-            } catch (IOException e) {
-                log.error("Failed to create insertObject of GCS ", e);
-            }
-
-            insertObject.setName(key);
-
-
-            insertObject.getMediaHttpUploader()
-                    .setProgressListener(new CustomUploadProgressListener()).setDisableGZipContent(true);
-
-            // For small files, you may wish to call setDirectUploadEnabled(true), to
-            // reduce the number of HTTP requests made to the server.
-
-            if (mediaContent.getLength() > 0 && mediaContent.getLength() <= 2 * 1000 * 1000 /* 2MB */) {
-                insertObject.getMediaHttpUploader().setDirectUploadEnabled(true);
-            }
+            //deal with exception that the object has been deleted when trying to fetch it from S3
+            S3Object s3object = null;
 
             try {
-                stats.copyCount.incrementAndGet();
-                insertObject.execute();
-                stats.bytesCopied.addAndGet(sourceMetadata.getContentLength());
-                if (verbose)
-                    log.info("Successfully copied (on try # {} ): {} to: {} in GCS", new Object[]{tries, key, keydest});
-                return true;
-            } catch (IOException e) {
-                log.error("GCS exception copying (try # {} ) {} to: {} : {}", new Object[]{tries, key, keydest, e});
+                s3object = s3Client.getObject(new GetObjectRequest(
+                        options.getSourceBucket(), key));
+            } catch (AmazonServiceException e) {
+                log.error("Failed to fetch object from S3. Object {} may have been deleted: {}", key, e);
+            } catch (Exception e) {
+                log.error("Failed to fetch object from S3. Object {} may have been deleted: {}", key, e);
             }
+
+            if (s3object != null) {
+
+                InputStream inputStream = s3object.getObjectContent();
+
+                String type = s3object.getObjectMetadata().getContentType();
+                mediaContent = new InputStreamContent(type, inputStream);
+
+                String etag = s3object.getObjectMetadata().getETag();
+                StorageObject objectMetadata = new StorageObject()
+                        .setMetadata(ImmutableMap.of("Etag", etag));
+
+
+                Storage.Objects.Insert insertObject = null;
+                try {
+                    insertObject = gcsClient.objects().insert(options.getDestinationBucket(), objectMetadata, mediaContent);
+                } catch (IOException e) {
+                    log.error("Failed to create insertObject of GCS ", e);
+                }
+
+                insertObject.setName(key);
+
+
+                insertObject.getMediaHttpUploader()
+                        .setProgressListener(new CustomUploadProgressListener()).setDisableGZipContent(true);
+
+                // For small files, you may wish to call setDirectUploadEnabled(true), to
+                // reduce the number of HTTP requests made to the server.
+
+                if (mediaContent.getLength() > 0 && mediaContent.getLength() <= 2 * 1000 * 1000 /* 2MB */) {
+                    insertObject.getMediaHttpUploader().setDirectUploadEnabled(true);
+                }
+
+                try {
+                    stats.copyCount.incrementAndGet();
+                    insertObject.execute();
+                    stats.bytesCopied.addAndGet(sourceMetadata.getContentLength());
+                    if (verbose)
+                        log.info("Successfully copied (on try # {} ): {} to: {} in GCS", new Object[]{tries, key, keydest});
+                    copied = true;
+                    break;
+                } catch (GoogleJsonResponseException e) {
+                    if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                        log.error("Failed to access GCS bucket. Check bucket name: ", e);
+                        System.exit(1);
+                    }
+                }catch (IOException e) {
+                    log.error("GCS exception copying (try # {} ) {} to: {} : {}", new Object[]{tries, key, keydest, e});
+                }
+            }
+
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
-                log.error("interrupted while waiting to retry key: {}", key);
-                return false;
+                log.error("interrupted while waiting to retry key: {}, {}", key, e);
+                return copied;
             }
         }
-        return false;
+        return copied;
     }
 
     private boolean shouldTransfer() {
@@ -163,13 +190,13 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
             if (lastModified == null) {
                 if (verbose) {
                     log.info("No Last-Modified header for key: {}", key);
-                } else {
-                    if (lastModified.getTime() < options.getMaxAge()) {
-                        if (verbose) {
-                            log.info("key {} (lastmod = {} ) is older than {} (cutoff= {}), not copying", new Object[]{key, lastModified, options.getCtime(), options.getMaxAgeDate()});
-                            return false;
-                        }
+                }
+            } else {
+                if (lastModified.getTime() < options.getMaxAge()) {
+                    if (verbose) {
+                        log.info("key {} (lastmod = {} ) is older than {} (cutoff= {}), not copying", new Object[]{key, lastModified, options.getCtime(), options.getMaxAgeDate()});
                     }
+                    return false;
                 }
             }
         }
@@ -178,11 +205,11 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
         try {
             metadata = getGCSObjectMetadata(options.getDestinationBucket(), keydest, options);
         } catch (GoogleJsonResponseException e) {
-            if (e.getStatusCode() == 400) {
+            if (e.getStatusCode() ==  HttpStatus.SC_BAD_REQUEST) {
                 log.error("Failed to talk to GCS. It may caused by invalid GCS credentials. Please provide valid credentials: ", e);
                 System.exit(1);
             }
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 if (verbose) {
                     log.info("Key not found in GCS bucket (will copy to GCS): {}", keydest);
                 }
@@ -193,7 +220,6 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
             }
         } catch (Exception e) {
             log.error("Error getting metadata for destination bucket: {}, object: {} (not copying to GCS): {}", new Object[]{options.getDestinationBucket(), keydest, e});
-
             return false;
         }
 
@@ -241,7 +267,7 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
                     break;
                 case MEDIA_COMPLETE:
                     stopwatch.stop();
-                    System.out.println(String.format("Upload is complete! (%s)", stopwatch));
+                    log.info(String.format("Upload is complete! (%s)", stopwatch));
                     break;
                 case NOT_STARTED:
                     break;

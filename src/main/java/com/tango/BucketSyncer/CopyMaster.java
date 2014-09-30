@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,15 +48,15 @@ public class CopyMaster extends KeyMaster {
 
         String packageName = this.getClass().getPackage().getName();
         String name = context.getOptions().getSrcStore().toString().toUpperCase();
-        String listerName = name + "KeyLister";
-        String classname = String.format("%s.KeyListers.%s", packageName, listerName);
+        String listerName = String.format("%s%s", name, MirrorConstants.KEY_LISTER);
+        String className = String.format("%s.%s.%s", packageName, MirrorConstants.KEY_LISTERS, listerName);
 
 
         Class<? extends KeyLister> clazz = null;
         try {
-            clazz = (Class<? extends KeyLister>) Class.forName(classname);
+            clazz = (Class<? extends KeyLister>) Class.forName(className);
         } catch (ClassNotFoundException e) {
-            log.error("Classname for KeyLister is not found: ", e);
+            log.error("Classname for KEY_LISTER {} is not found: {}", className, e);
         }
         Constructor<?> constructor = null;
         try {
@@ -65,7 +66,7 @@ public class CopyMaster extends KeyMaster {
                     MirrorContext.class,
                     Integer.class);
         } catch (NoSuchMethodException e) {
-            log.error("Failed to find corresponding KeyLister constructor", e);
+            log.error("Failed to find corresponding KEY_LISTER constructor: ", e);
         }
         try {
             return (KeyLister) constructor.newInstance(sourceClient, getBucket(options),
@@ -73,11 +74,11 @@ public class CopyMaster extends KeyMaster {
                     context,
                     MirrorMaster.getMaxQueueCapacity(options));
         } catch (InstantiationException e) {
-            log.error("Failed to instantiate KeyLister", e);
+            log.error("Failed to instantiate KEY_LISTER: ", e);
         } catch (IllegalAccessException e) {
-            log.error("Failed to access KeyLister", e);
+            log.error("Failed to access KEY_LISTER: ", e);
         } catch (InvocationTargetException e) {
-            log.error("Failed to invocate KeyLister", e);
+            log.error("Failed to invocate KEY_LISTER: ", e);
         }
         return null;
     }
@@ -87,22 +88,22 @@ public class CopyMaster extends KeyMaster {
         String packageName = this.getClass().getPackage().getName();
         String src = context.getOptions().getSrcStore().toString().toUpperCase();
         String dest = context.getOptions().getDestStore().toString().toUpperCase();
-        String keyCopyJobName = String.format("%s2%sKeyCopyJob", src, dest);
-        String multipartKeyCopyJobName = String.format("%s2%sMultipartKeyCopyJob", src, dest);
-        String classname;
+        String keyCopyJobName = String.format("%s2%s%s", src, dest, MirrorConstants.KEY_COPY_JOB);
+        String multipartKeyCopyJobName = String.format("%s2%s%s", src, dest, MirrorConstants.MULTIPART_KEY_COPY_JOB);
+        String className;
 
         //currently, only S3 supports multipartupload.
         if (summary.getSize() > MirrorOptions.MAX_SINGLE_REQUEST_UPLOAD_FILE_SIZE && dest == "S3") {
-            classname = String.format("%s.KeyJobs.%s", packageName, multipartKeyCopyJobName);
+            className = String.format("%s.%s.%s", packageName, MirrorConstants.KEY_JOBS, multipartKeyCopyJobName);
         } else {
-            classname = String.format("%s.KeyJobs.%s", packageName, keyCopyJobName);
+            className = String.format("%s.%s.%s", packageName, MirrorConstants.KEY_JOBS, keyCopyJobName);
         }
 
         Class<?> clazz = null;
         try {
-            clazz = Class.forName(classname);
+            clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            log.error("Classname for KeyCopyJobs is not found: ", e);
+            log.error("Classname for KeyCopyJobs {} is not found:", className, e);
         }
         Constructor<?> constructor = null;
         try {
@@ -112,7 +113,7 @@ public class CopyMaster extends KeyMaster {
                     ObjectSummary.class,
                     Object.class);
         } catch (NoSuchMethodException e) {
-            log.error("Failed to find corresponding KeyCopyJobs constructor: ", e);
+            log.error("Failed to find corresponding KeyCopyJobs constructor:", e);
         }
         try {
             return (KeyJob) constructor.newInstance(sourceClient,
@@ -121,11 +122,11 @@ public class CopyMaster extends KeyMaster {
                     summary,
                     notifyLock);
         } catch (InstantiationException e) {
-            log.error("Failed to instantiate KeyCopyJobs: ", e);
+            log.error("Failed to instantiate KeyCopyJobs: {}", e);
         } catch (IllegalAccessException e) {
-            log.error("Failed to access KeyCopyJobs: ", e);
+            log.error("Failed to access KeyCopyJobs:", e);
         } catch (InvocationTargetException e) {
-            log.error("Failed to invocate KeyCopyJobs: ", e);
+            log.error("Failed to invocate KeyCopyJobs:", e);
         }
         return null;
     }

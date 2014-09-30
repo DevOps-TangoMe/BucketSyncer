@@ -21,6 +21,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -29,7 +30,9 @@ import java.util.List;
 import static com.tango.BucketSyncer.MirrorOptions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
+/*
+This test suit requires S3 credentials. Please provide S3 credentials in s3cfg.properties and set up source and destination buckets before enabling the following tests.
+ */
 @Slf4j
 public class S32S3MirrorTest {
 
@@ -81,31 +84,52 @@ public class S32S3MirrorTest {
     public void testSimpleCopy() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopy_" + random(10);
-        final String[] args = {OPT_VERBOSE, OPT_PREFIX, key, SOURCE, DESTINATION};
+        final String[] args = {OPT_VERBOSE, OPT_PREFIX, key, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
 
         testSimpleCopyInternal(key, args);
     }
-
+    //@Ignore
     @Test
     public void testSimpleCopyWithInlinePrefix() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithInlinePrefix_" + random(10);
-        final String[] args = {OPT_VERBOSE, SOURCE + "/" + key, DESTINATION};
+        final String[] args = {OPT_VERBOSE, OPT_SOURCE_BUCKET, SOURCE + "/" + key, OPT_DESTINATION_BUCKET, DESTINATION};
 
         testSimpleCopyInternal(key, args);
     }
 
+    //@Ignore
     @Test
     public void testSimpleCopyWithCtime() throws Exception {
         if (!checkEnvs()) return;
         final String prefix = "testSimpleCopyWithCtime";
         final String key1 = prefix + random(10);
         final String key2 = prefix + random(10);
-        final String[] args1 = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION};
-        final String[] args2 = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION, OPT_CTIME, "1s"};
+        final String[] args1 = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
+        final String[] args2 = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_CTIME, "1s"};
         testSimpleCopyInternal(key1, args1);
         Thread.sleep(2000);
         testSimpleCopyInternal(key2, args2);
+    }
+
+    @Test
+    public void testMultipleBatch() throws Exception{
+        if (!checkEnvs()) return;
+        //put three objects into source while thread size is two, so need to call s3getNextBatch()
+        final String prefix = "testMultipleBatch";
+        final String key1 = prefix + random(10);
+        final String key2 = prefix + random(10);
+        final String key3 = prefix + random(10);
+        final String[] args = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_MAX_THREADS, "2"};
+
+        main = new MirrorMain(args);
+        main.init();
+        final S32S3TestFile s32S3TestFile1 = createTestFile(key1, S32S3TestFile.Copy.SOURCE, S32S3TestFile.Clean.SOURCE_AND_DEST);
+        final S32S3TestFile s32S3TestFile2 = createTestFile(key2, S32S3TestFile.Copy.SOURCE, S32S3TestFile.Clean.SOURCE_AND_DEST);
+        final S32S3TestFile s32S3TestFile3 = createTestFile(key3, S32S3TestFile.Copy.SOURCE, S32S3TestFile.Clean.SOURCE_AND_DEST);
+
+        main.run();
+        assertEquals(3, main.getContext().getStats().objectsCopied.get());
     }
 
     private void testSimpleCopyInternal(String key, String[] args) throws Exception {
@@ -129,7 +153,7 @@ public class S32S3MirrorTest {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithDestPrefix_" + random(10);
         final String destKey = "dest_testSimpleCopyWithDestPrefix_" + random(10);
-        final String[] args = {OPT_PREFIX, key, OPT_DEST_PREFIX, destKey, SOURCE, DESTINATION};
+        final String[] args = {OPT_PREFIX, key, OPT_DEST_PREFIX, destKey, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
         testSimpleCopyWithDestPrefixInternal(key, destKey, args);
     }
 
@@ -138,7 +162,7 @@ public class S32S3MirrorTest {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithInlineDestPrefix_" + random(10);
         final String destKey = "dest_testSimpleCopyWithInlineDestPrefix_" + random(10);
-        final String[] args = {SOURCE + "/" + key, DESTINATION + "/" + destKey};
+        final String[] args = {OPT_SOURCE_BUCKET, SOURCE + "/" + key, OPT_DESTINATION_BUCKET, DESTINATION + "/" + destKey};
         testSimpleCopyWithDestPrefixInternal(key, destKey, args);
     }
 
@@ -148,7 +172,7 @@ public class S32S3MirrorTest {
         String prefix = "testSkipCopyingNotChangedFile_";
         final String key1 = "testSkipCopyingNotChangedFile_" + random(10);
         final String key2 = "testSkipCopyingNotChangedFile_" + random(10);
-        final String[] args = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION};
+        final String[] args = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
 
         testSimpleCopyInternal(key1, args);
         testSimpleCopyInternal(key2, args);
@@ -178,7 +202,7 @@ public class S32S3MirrorTest {
         final String key = "testDeleteRemoved_" + random(10);
 
         main = new MirrorMain(new String[]{OPT_VERBOSE, OPT_PREFIX, key,
-                OPT_DELETE_REMOVED, SOURCE, DESTINATION});
+                OPT_DELETE_REMOVED, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION});
         main.init();
 
         // Write some files to dest

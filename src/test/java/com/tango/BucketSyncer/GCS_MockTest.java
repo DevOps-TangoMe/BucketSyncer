@@ -40,10 +40,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.tango.BucketSyncer.MirrorOptions.OPT_DELETE_REMOVED;
-import static com.tango.BucketSyncer.MirrorOptions.OPT_DEST_STORE;
-import static com.tango.BucketSyncer.MirrorOptions.OPT_VERBOSE;
-import static com.tango.BucketSyncer.MirrorOptions.OPT_GCS_APPLICAION_NAME;
+import static com.tango.BucketSyncer.MirrorOptions.*;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 
@@ -66,7 +63,7 @@ public class GCS_MockTest {
     public void testSimpleDelete() throws Exception {
 
         main = new MirrorMain(new String[]{OPT_VERBOSE,
-                OPT_DELETE_REMOVED, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, "TangoMe"});
+                OPT_DELETE_REMOVED, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, "TangoMe"});
         main.parseArguments();
         main.setSourceClient(s3);
         main.setDestClient(gcs);
@@ -120,7 +117,7 @@ public class GCS_MockTest {
 
         S3ObjectSummary testObjectSummary = new S3ObjectSummary();
         final String key = "test_object";
-        final String[] args = {OPT_VERBOSE, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, "TangoMe"};
+        final String[] args = {OPT_VERBOSE, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, "TangoMe"};
         testObjectSummary.setETag("etag");
         testObjectSummary.setBucketName("source_bucket");
         testObjectSummary.setKey("test_object");

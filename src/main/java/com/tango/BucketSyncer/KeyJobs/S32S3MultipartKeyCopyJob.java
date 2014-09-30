@@ -1,5 +1,5 @@
 /**
- *  Copyright 2014 TangoMe Inc.
+ *  Copyright 2013 Jonathan Cobb
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ public class S32S3MultipartKeyCopyJob extends S32S3KeyCopyJob {
                     if (tries == maxPartRetries) {
                         client.abortMultipartUpload(new AbortMultipartUploadRequest(
                                 targetBucketName, keydest, initResult.getUploadId()));
-                        log.error("Exception while doing multipart copy", e);
+                        log.error("Exception while doing multipart copy: {}", e);
                         return false;
                     }
                 }

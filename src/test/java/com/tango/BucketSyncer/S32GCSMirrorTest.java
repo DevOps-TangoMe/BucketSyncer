@@ -22,6 +22,7 @@ import com.google.api.services.storage.model.StorageObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,7 +31,9 @@ import java.util.List;
 import static com.tango.BucketSyncer.MirrorOptions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
+/*
+This test suit requires S3 and GCS credentials. Please provide S3 credentials in s3cfg.properties, GCS credentials in gcscfg.json, and set up GCS application name, source and destination buckets before enabling the following tests.
+ */
 @Slf4j
 public class S32GCSMirrorTest {
 
@@ -93,33 +96,36 @@ public class S32GCSMirrorTest {
         }
     }
 
+    //@Ignore
     @Test
     public void testSimpleCopy() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopy_" + random(10);
-        final String[] args = {OPT_VERBOSE, OPT_PREFIX, key, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args = {OPT_VERBOSE, OPT_PREFIX, key, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
 
         testSimpleCopyInternal(key, args);
     }
 
+    //@Ignore
     @Test
     public void testSkipCopyingNotChangedFile() throws Exception {
         if (!checkEnvs()) return;
         String prefix = "testSkipCopyingNotChangedFile_";
         final String key1 = "testSkipCopyingNotChangedFile_" + random(10);
         final String key2 = "testSkipCopyingNotChangedFile_" + random(10);
-        final String[] args = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
 
         testSimpleCopyInternal(key1, args);
         testSimpleCopyInternal(key2, args);
 
     }
 
+    //@Ignore
     @Test
     public void testSimpleCopyWithInlinePrefix() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithInlinePrefix_" + random(10);
-        final String[] args = {OPT_VERBOSE, SOURCE + "/" + key, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args = {OPT_VERBOSE, OPT_SOURCE_BUCKET, SOURCE + "/" + key, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
 
         testSimpleCopyInternal(key, args);
     }
@@ -142,35 +148,37 @@ public class S32GCSMirrorTest {
         assertEquals(s32GCSTestFile.data.length(), gcsObject.getSize().intValue());
     }
 
+    //@Ignore
     @Test
     public void testSimpleCopyWithDestPrefix() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithDestPrefix_" + random(10);
         final String destKey = "dest_testSimpleCopyWithDestPrefix_" + random(10);
-        final String[] args = {OPT_PREFIX, key, OPT_DEST_PREFIX, destKey, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args = {OPT_PREFIX, key, OPT_DEST_PREFIX, destKey, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
         testSimpleCopyWithDestPrefixInternal(key, destKey, args);
     }
 
+    //@Ignore
     @Test
     public void testSimpleCopyWithCtime() throws Exception {
         if (!checkEnvs()) return;
         final String prefix = "testSimpleCopyWithCtime";
         final String key1 = prefix + random(10);
         final String key2 = prefix + random(10);
-        final String[] args1 = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
-        final String[] args2 = {OPT_VERBOSE, OPT_PREFIX, prefix, SOURCE, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME, OPT_CTIME, "1s"};
+        final String[] args1 = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args2 = {OPT_VERBOSE, OPT_PREFIX, prefix, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME, OPT_CTIME, "1s"};
         testSimpleCopyInternal(key1, args1);
         Thread.sleep(2000);
         testSimpleCopyInternal(key2, args2);
     }
 
-
+    //@Ignore
     @Test
     public void testSimpleCopyWithInlineDestPrefix() throws Exception {
         if (!checkEnvs()) return;
         final String key = "testSimpleCopyWithInlineDestPrefix_" + random(10);
         final String destKey = "dest_testSimpleCopyWithInlineDestPrefix_" + random(10);
-        final String[] args = {SOURCE + "/" + key, DESTINATION + "/" + destKey, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
+        final String[] args = {OPT_SOURCE_BUCKET, SOURCE + "/" + key, OPT_DESTINATION_BUCKET, DESTINATION + "/" + destKey, OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME};
         testSimpleCopyWithDestPrefixInternal(key, destKey, args);
     }
 
@@ -192,6 +200,7 @@ public class S32GCSMirrorTest {
 
     }
 
+    //@Ignore
     @Test
     public void testDeleteRemoved() throws Exception {
         if (!checkEnvs()) return;
@@ -199,7 +208,7 @@ public class S32GCSMirrorTest {
         final String key = "testDeleteRemoved_" + random(10);
 
         main = new MirrorMain(new String[]{OPT_VERBOSE, OPT_PREFIX, key,
-                OPT_DELETE_REMOVED, SOURCE, DESTINATION, OPT_CTIME, "2d", OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME});
+                OPT_DELETE_REMOVED, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION, OPT_CTIME, "2d", OPT_DEST_STORE, "GCS", OPT_GCS_APPLICAION_NAME, GCS_APP_NAME});
 
         main.init();
 

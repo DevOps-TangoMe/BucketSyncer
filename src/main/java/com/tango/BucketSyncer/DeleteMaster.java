@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,15 +45,14 @@ public class DeleteMaster extends KeyMaster {
     protected KeyLister getKeyLister(MirrorOptions options) {
         String packageName = this.getClass().getPackage().getName();
         String name = context.getOptions().getDestStore().toString().toUpperCase();
-        String listerName = name + "KeyLister";
-        String classname = String.format("%s.KeyListers.%s", packageName, listerName);
-
+        String listerName = String.format("%s%s", name, MirrorConstants.KEY_LISTER);
+        String className = String.format("%s.%s.%s", packageName, MirrorConstants.KEY_LISTERS, listerName);
 
         Class<? extends KeyLister> clazz = null;
         try {
-            clazz = (Class<? extends KeyLister>) Class.forName(classname);
+            clazz = (Class<? extends KeyLister>) Class.forName(className);
         } catch (ClassNotFoundException e) {
-            log.error("Classname for KeyLister is not found: ", e);
+            log.error("Classname for KEY_LISTER {} is not found: {}", className, e);
         }
         Constructor<?> constructor = null;
         try {
@@ -62,7 +62,7 @@ public class DeleteMaster extends KeyMaster {
                     MirrorContext.class,
                     Integer.class);
         } catch (NoSuchMethodException e) {
-            log.error("Failed to find corresponding KeyLister constructor", e);
+            log.error("Failed to find corresponding KEY_LISTER constructor: ", e);
         }
         try {
             return (KeyLister) constructor
@@ -72,11 +72,11 @@ public class DeleteMaster extends KeyMaster {
                             context,
                             MirrorMaster.getMaxQueueCapacity(options));
         } catch (InstantiationException e) {
-            log.error("Failed to instantiate KeyLister", e);
+            log.error("Failed to instantiate KEY_LISTER: ", e);
         } catch (IllegalAccessException e) {
-            log.error("Failed to access KeyLister", e);
+            log.error("Failed to access KEY_LISTER: ", e);
         } catch (InvocationTargetException e) {
-            log.error("Failed to invocate KeyLister", e);
+            log.error("Failed to invocate KEY_LISTER: ", e);
         }
         return null;
 
@@ -85,15 +85,15 @@ public class DeleteMaster extends KeyMaster {
     protected KeyJob getTask(ObjectSummary summary) {
         String src = context.getOptions().getSrcStore().toString().toUpperCase();
         String dest = context.getOptions().getDestStore().toString().toUpperCase();
-        String keyDeleteJobName = String.format("%s2%sKeyDeleteJob", src, dest);
+        String keyDeleteJobName = String.format("%s2%s%s", src, dest, MirrorConstants.KEY_DELETE_JOB);
         String packageName = this.getClass().getPackage().getName();
-        String classname = String.format("%s.KeyJobs.%s", packageName, keyDeleteJobName);
+        String className = String.format("%s.%s.%s", packageName, MirrorConstants.KEY_JOBS, keyDeleteJobName);
 
         Class<?> clazz = null;
         try {
-            clazz = Class.forName(classname);
+            clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            log.error("Classname for KeyDeleteJobs {} is not found: {}", className, e);
         }
         Constructor<?> constructor = null;
         try {
@@ -103,7 +103,7 @@ public class DeleteMaster extends KeyMaster {
                     ObjectSummary.class,
                     Object.class);
         } catch (NoSuchMethodException e) {
-            log.error("Classname for KeyDeleteJobs is not found: ", e);
+            log.error("Failed to find corresponding KeyDeleteJob {} constructor: {}", className, e);
         }
         try {
             return (KeyJob) constructor.newInstance(sourceClient,

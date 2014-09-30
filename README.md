@@ -87,7 +87,7 @@ The above command requires that Maven 3 is installed.
                                       would be done
     -p (--prefix) VAL               : Only copy objects whose keys start with this
                                       prefix
-    -r (--max-retries) N            : Maximum number of retries for S3 requests
+    -r (--max-retries) N            : Maximum number of retries for requests
                                       (default 5)
     -t (--max-threads) N            : Maximum number of threads (default 100)
     -u (--upload-part-size) N       : The upload size (in bytes) of each part

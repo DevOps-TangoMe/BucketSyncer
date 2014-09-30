@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +23,7 @@ import com.tango.BucketSyncer.MirrorOptions;
 import com.tango.BucketSyncer.MirrorStats;
 import com.tango.BucketSyncer.ObjectSummaries.ObjectSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 
 
 @Slf4j
@@ -52,7 +54,9 @@ public class S32GCSKeyDeleteJob extends S32GCSKeyJob {
         final int maxRetries = options.getMaxRetries();
         final String key = summary.getKey();
         try {
-            if (!shouldDelete()) return;
+            if (!shouldDelete()) {
+                return;
+            }
 
             if (options.isDryRun()) {
                 log.info("Would have deleted {} from destination because {} does not exist in source", key, keysrc);
@@ -72,12 +76,12 @@ public class S32GCSKeyDeleteJob extends S32GCSKeyJob {
                         break;
 
                     } catch (Exception e) {
-                        log.error("unexpected exception deleting (try # {}) {}: ", new Object[]{tries, key}, e);
+                        log.error("unexpected exception deleting (try # {}) {}: {}", new Object[]{tries, key, e});
                     }
                     try {
                         Thread.sleep(10);
                     } catch (InterruptedException e) {
-                        log.error("interrupted while waiting to retry key: {}", key);
+                        log.error("interrupted while waiting to retry key: {}, {}", key, e);
                         break;
                     }
                 }
@@ -85,11 +89,13 @@ public class S32GCSKeyDeleteJob extends S32GCSKeyJob {
                     stats.objectsDeleted.incrementAndGet();
                 } else {
                     stats.deleteErrors.incrementAndGet();
+                    //add fail-deleted key to errorKeyList
+                    context.getStats().errorKeyList.add(key);
                 }
             }
 
         } catch (Exception e) {
-            log.error("error deleting key {} : ", key, e);
+            log.error("error deleting key {} : {}", key, e);
 
         } finally {
             synchronized (notifyLock) {
@@ -102,26 +108,28 @@ public class S32GCSKeyDeleteJob extends S32GCSKeyJob {
     }
 
     private boolean shouldDelete() {
+        boolean shouldDelete = false;
         final MirrorOptions options = context.getOptions();
         final boolean verbose = options.isVerbose();
 
         try {
             ObjectMetadata metadata = getS3ObjectMetadata(options.getSourceBucket(), keysrc, options);
-            return false; // object exists in source bucket, don't delete it from destination bucket
+            return shouldDelete; // object exists in source bucket, don't delete it from destination bucket
 
         } catch (AmazonS3Exception e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 if (verbose) {
                     log.info("Key not found in source bucket (will delete from destination): {}", keysrc);
                 }
-                return true;
+                shouldDelete = true;
+                return shouldDelete;
             } else {
-                log.warn("Error getting metadata for {} {} (not deleting from GCS): ", new Object[]{options.getSourceBucket(), keysrc}, e);
-                return false;
+                log.warn("Error getting metadata for {} {} (not deleting from GCS): {}", new Object[]{options.getSourceBucket(), keysrc, e});
+                return shouldDelete;
             }
         } catch (Exception e) {
-            log.warn("Error getting metadata for {} {} (not deleting from GCS): ", new Object[]{options.getSourceBucket(), keysrc}, e);
-            return false;
+            log.warn("Error getting metadata for {} {} (not deleting from GCS): {}", new Object[]{options.getSourceBucket(), keysrc, e});
+            return shouldDelete;
         }
     }
 }

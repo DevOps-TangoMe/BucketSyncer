@@ -27,7 +27,7 @@ public class MirrorMainTest {
     @Test
     public void testBasicArgs() throws Exception {
 
-        final MirrorMain main = new MirrorMain(new String[]{SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -39,7 +39,7 @@ public class MirrorMainTest {
     @Test
     public void testDryRunArgs() throws Exception {
 
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_DRY_RUN, SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_DRY_RUN, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -52,7 +52,7 @@ public class MirrorMainTest {
     public void testMaxConnectionsArgs() throws Exception {
 
         int maxConns = 42;
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_MAX_CONNECTIONS, String.valueOf(maxConns), SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_MAX_CONNECTIONS, String.valueOf(maxConns), MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -65,7 +65,7 @@ public class MirrorMainTest {
     @Test
     public void testInlinePrefix() throws Exception {
         final String prefix = "foo";
-        final MirrorMain main = new MirrorMain(new String[]{SOURCE + "/" + prefix, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_SOURCE_BUCKET, SOURCE + "/" + prefix, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -76,7 +76,7 @@ public class MirrorMainTest {
     @Test
     public void testInlineDestPrefix() throws Exception {
         final String destPrefix = "foo";
-        final MirrorMain main = new MirrorMain(new String[]{SOURCE, DESTINATION + "/" + destPrefix});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION + "/" + destPrefix});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -88,7 +88,7 @@ public class MirrorMainTest {
     public void testInlineSourceAndDestPrefix() throws Exception {
         final String prefix = "foo";
         final String destPrefix = "bar";
-        final MirrorMain main = new MirrorMain(new String[]{SOURCE + "/" + prefix, DESTINATION + "/" + destPrefix});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_SOURCE_BUCKET, SOURCE + "/" + prefix, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION + "/" + destPrefix});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -99,7 +99,7 @@ public class MirrorMainTest {
     @Test
     public void testInlineSourcePrefixAndPrefixOption() throws Exception {
         final String prefix = "foo";
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PREFIX, prefix, SOURCE + "/" + prefix, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PREFIX, prefix, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE + "/" + prefix, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         try {
             main.parseArguments();
             fail("expected IllegalArgumentException");
@@ -111,7 +111,7 @@ public class MirrorMainTest {
     @Test
     public void testInlineDestinationPrefixAndPrefixOption() throws Exception {
         final String prefix = "foo";
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_DEST_PREFIX, prefix, SOURCE, DESTINATION + "/" + prefix});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_DEST_PREFIX, prefix, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION + "/" + prefix});
         try {
             main.parseArguments();
             fail("expected IllegalArgumentException");
@@ -129,7 +129,7 @@ public class MirrorMainTest {
     @Test
     public void testProxyHostAndProxyPortOption() throws Exception {
         final String proxy = "localhost:8080";
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PROXY, proxy, SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PROXY, proxy, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
 
         main.getOptions().setAWSAccessKeyId("accessKey");
         main.getOptions().setAWSSecretKey("secretKey");
@@ -152,7 +152,7 @@ public class MirrorMainTest {
         final String gcsAppName = "GCS_APP";
         final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_SRC_STORE, srcStore,
                 MirrorOptions.OPT_DEST_STORE, destStore,
-                SOURCE, DESTINATION, MirrorOptions.OPT_GCS_APPLICAION_NAME, gcsAppName});
+                MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION, MirrorOptions.OPT_GCS_APPLICAION_NAME, gcsAppName});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -164,8 +164,7 @@ public class MirrorMainTest {
     @Test
     public void testGCSApplicationOption() throws Exception {
         final String gcsApplication = "MyCompany-ProductName/1.0";
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_GCS_APPLICAION_NAME, gcsApplication,
-                SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_GCS_APPLICAION_NAME, gcsApplication, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.parseArguments();
 
         final MirrorOptions options = main.getOptions();
@@ -174,7 +173,7 @@ public class MirrorMainTest {
 
 
     private void testInvalidProxySetting(String proxy) throws Exception {
-        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PROXY, proxy, SOURCE, DESTINATION});
+        final MirrorMain main = new MirrorMain(new String[]{MirrorOptions.OPT_PROXY, proxy, MirrorOptions.OPT_SOURCE_BUCKET, SOURCE, MirrorOptions.OPT_DESTINATION_BUCKET, DESTINATION});
         main.getOptions().setAWSAccessKeyId("accessKey");
         main.getOptions().setAWSSecretKey("secretKey");
         try {

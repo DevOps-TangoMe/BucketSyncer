@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +27,7 @@ import com.tango.BucketSyncer.MirrorContext;
 import com.tango.BucketSyncer.MirrorOptions;
 import com.tango.BucketSyncer.ObjectSummaries.ObjectSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 
 import java.io.IOException;
 
@@ -50,27 +52,37 @@ public abstract class S32GCSKeyJob extends KeyJob {
     //get object meta data from S3
     protected ObjectMetadata getS3ObjectMetadata(String bucket, String key, MirrorOptions options) throws Exception {
         Exception ex = null;
+        ObjectMetadata objectMetadata = null;
         for (int tries = 0; tries < options.getMaxRetries(); tries++) {
             try {
                 context.getStats().getCount.incrementAndGet();
-                return s3Client.getObjectMetadata(bucket, key);
+                objectMetadata = s3Client.getObjectMetadata(bucket, key);
+                break;
 
             } catch (AmazonS3Exception e) {
-                if (e.getStatusCode() == 404) throw e;
+                if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                    Throwables.propagate(e);
+                }
 
             } catch (Exception e) {
                 ex = e;
-                if (options.isVerbose()) {
-                    if (tries >= options.getMaxRetries()) {
+                if (tries >= options.getMaxRetries()) {
+                    if (options.isVerbose()) {
                         log.error("getObjectMetadata({}) failed (try #{}), giving up", key, tries);
-                        break;
-                    } else {
-                        log.warn("getObjectMetadata({}) failed (try #{}), retrying...", key, tries);
                     }
+                    break;
+                } else if (options.isVerbose()) {
+                    log.warn("getObjectMetadata({}) failed (try #{}), retrying...", key, tries);
                 }
+
             }
         }
-        throw ex;
+
+        if (objectMetadata != null) {
+            return objectMetadata;
+        } else {
+            throw ex;
+        }
     }
 
 
@@ -84,48 +96,57 @@ public abstract class S32GCSKeyJob extends KeyJob {
             try {
                 getObject = gcsClient.objects().get(bucket, key);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Failed to fetch object: from GCS: {}", key, e);
                 Throwables.propagate(e);
             }
             try {
                 gcsObject = getObject.execute();
-                return gcsObject;
+                break;
             } catch (IOException e) {
                 ex = e;
-                if (options.isVerbose()) {
-                    if (tries >= options.getMaxRetries()) {
+                if (tries >= options.getMaxRetries()) {
+                    if (options.isVerbose()) {
                         log.error("getObjectMetadata({}) failed (try #{}), giving up", key, tries);
-                        break;
-                    } else {
-                        log.warn("getObjectMetadata({}) failed (try #{}), retrying...", key, tries);
                     }
+                    break;
+                } else if (options.isVerbose()) {
+                    log.warn("getObjectMetadata({}) failed (try #{}), retrying...", key, tries);
                 }
+
             }
         }
-        //need to modify
-        throw ex;
+        if(gcsObject != null){
+            return gcsObject;
+        }else {
+            throw ex;
+        }
     }
 
     //get ACL from S3 objects
     protected AccessControlList getAccessControlList(MirrorOptions options, String key) throws Exception {
         Exception ex = null;
+        AccessControlList acl = null;
         for (int tries = 0; tries < options.getMaxRetries(); tries++) {
             try {
                 context.getStats().getCount.incrementAndGet();
-                return s3Client.getObjectAcl(options.getSourceBucket(), key);
-
+                acl = s3Client.getObjectAcl(options.getSourceBucket(), key);
+                break;
             } catch (Exception e) {
                 ex = e;
-                if (options.isVerbose()) {
-                    if (tries >= options.getMaxRetries()) {
+                if (tries >= options.getMaxRetries()) {
+                    if (options.isVerbose()) {
                         log.error("getObjectAcl({}) failed (try #{}), giving up", key, tries);
-                        break;
-                    } else {
-                        log.warn("getObjectAcl({}) failed (try #{}), retrying...", key, tries);
                     }
+                    break;
+                } else if (options.isVerbose()) {
+                    log.warn("getObjectAcl({}) failed (try #{}), retrying...", key, tries);
                 }
             }
         }
-        throw ex;
+        if(acl != null){
+            return acl;
+        }else {
+            throw ex;
+        }
     }
 }

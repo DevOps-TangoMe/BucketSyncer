@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +20,7 @@ import com.amazonaws.services.s3.model.*;
 import com.tango.BucketSyncer.*;
 import com.tango.BucketSyncer.ObjectSummaries.ObjectSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 
 import java.util.Date;
 
@@ -50,7 +52,9 @@ public class S32S3KeyCopyJob extends S32S3KeyJob {
         final MirrorOptions options = context.getOptions();
         final String key = summary.getKey();
         try {
-            if (!shouldTransfer()) return;
+            if (!shouldTransfer()) {
+                return;
+            }
             final ObjectMetadata sourceMetadata = getObjectMetadata(options.getSourceBucket(), key, options);
             final AccessControlList objectAcl = getAccessControlList(options, key);
 
@@ -61,22 +65,25 @@ public class S32S3KeyCopyJob extends S32S3KeyJob {
                     context.getStats().objectsCopied.incrementAndGet();
                 } else {
                     context.getStats().copyErrors.incrementAndGet();
+                    //add fail-copied key to errorKeyList
+                    context.getStats().errorKeyList.add(key);
                 }
             }
         } catch (Exception e) {
-            log.error("error copying key: {}: ", key, e);
+            log.error("Error copying key: {}: {}", key, e);
 
         } finally {
             synchronized (notifyLock) {
                 notifyLock.notifyAll();
             }
             if (options.isVerbose()) {
-                log.info("done with {}", key);
+                log.info("Done with {}", key);
             }
         }
     }
 
     boolean keyCopied(ObjectMetadata sourceMetadata, AccessControlList objectAcl) {
+        boolean copied = false;
         String key = summary.getKey();
         MirrorOptions options = context.getOptions();
         boolean verbose = options.isVerbose();
@@ -100,8 +107,14 @@ public class S32S3KeyCopyJob extends S32S3KeyJob {
                 if (verbose) {
                     log.info("successfully copied (on try #{}): {} to: {}", new Object[]{tries, key, keydest});
                 }
-                return true;
+                copied = true;
+                break;
             } catch (AmazonS3Exception s3e) {
+                //if return with 404 error, problem with bucket name
+                if(s3e.getStatusCode() == HttpStatus.SC_NOT_FOUND){
+                    log.error("Failed to access S3 bucket. Check bucket name: ", s3e);
+                    System.exit(1);
+                }
                 log.error("s3 exception copying (try #{}) {} to: {}: {}", new Object[]{tries, key, keydest, s3e});
             } catch (Exception e) {
                 log.error("unexpected exception copying (try #{}) {} to: {}: {}", new Object[]{tries, key, keydest, e});
@@ -110,10 +123,10 @@ public class S32S3KeyCopyJob extends S32S3KeyJob {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 log.error("interrupted while waiting to retry key: {}: {}", key, e);
-                return false;
+                return copied;
             }
         }
-        return false;
+        return copied;
     }
 
     private boolean shouldTransfer() {
@@ -141,17 +154,17 @@ public class S32S3KeyCopyJob extends S32S3KeyJob {
         try {
             metadata = getObjectMetadata(options.getDestinationBucket(), keydest, options);
         } catch (AmazonS3Exception e) {
-            if (e.getStatusCode() == 404) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 if (verbose) {
-                    log.info("Key not found in destination bucket (will copy): {}", keydest);
+                    log.debug("Key not found in destination bucket (will copy): {}", keydest);
                 }
                 return true;
             } else {
-                log.warn("Error getting metadata for {} {} (not copying): ", new Object[]{options.getDestinationBucket(), keydest}, e);
+                log.warn("Error getting metadata for {} {} (not copying): {}", new Object[]{options.getDestinationBucket(), keydest, e});
                 return false;
             }
         } catch (Exception e) {
-            log.warn("Error getting metadata for {} {} (not copying): ", new Object[]{options.getDestinationBucket(), keydest}, e);
+            log.warn("Error getting metadata for {} {} (not copying): {}", new Object[]{options.getDestinationBucket(), keydest, e});
             return false;
         }
 

@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.*;
 
 /**
- * Manages the Starts a KeyLister and sends batches of keys to the ExecutorService for handling by KeyJobs
+ * Manages the Starts a KEY_LISTER and sends batches of keys to the ExecutorService for handling by KeyJobs
  */
 @Slf4j
 public class MirrorMaster {

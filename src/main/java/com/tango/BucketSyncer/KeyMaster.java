@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,7 +94,7 @@ public abstract class KeyMaster implements Runnable {
                     log.warn("{} didn't stop within {} after interrupting it, forcibly killing the thread...", name, STOP_TIMEOUT_SECONDS);
                     this.thread.stop();
                 } catch (Exception e) {
-                    log.error("Error calling Thread.stop on {}: ", name, e);
+                    log.error("Error calling Thread.stop on {}: {}", name, e);
                 }
             }
             if (isDone())

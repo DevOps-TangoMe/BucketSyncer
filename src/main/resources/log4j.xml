@@ -11,6 +11,17 @@
         </layout>
     </appender>
 
+    <!-- APPENDER: rollingFileSize -->
+    <appender name="rollingFileSize" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="BucketSyncer.log" />
+        <param name="MaxFileSize" value="50MB" />
+        <param name="MaxBackupIndex" value="10" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d{ISO8601} [%t] %-5p %c - %m%n" />
+        </layout>
+    </appender>
+
+
     <!-- our loggers -->
     <logger name="org.tangome">
         <level value="info" />
@@ -20,6 +31,7 @@
     <root>
         <priority value="info" />
         <appender-ref ref="console" />
+        <appender-ref ref="rollingFileSize" />
     </root>
 
 </log4j:configuration>

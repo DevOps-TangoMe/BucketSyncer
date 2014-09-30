@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +17,14 @@
 package com.tango.BucketSyncer;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -29,16 +36,50 @@ public class MirrorStats {
         @Override
         public void run() {
             logStats();
+            //also write logStats to report
+            generateReport();
+
         }
     };
 
+    @Setter
+    private String source;
+
+    @Setter
+    private String destination;
+
     private static final String BANNER = "\n--------------------------------------------------------------------\n";
 
+    public void generateReport() {
+        //String content = String.format("{} STATS BEGIN\n {} STATS END {}", new Object[]{BANNER, toString(), BANNER});
+        String content = String.format("%s STATS BEGIN: %s --> %s\n %s STATS END %s",
+                                       BANNER, source, destination, toString(), BANNER);
+        File report = new File(MirrorConstants.REPORT);
+        if (!report.exists()) {
+            try {
+                report.createNewFile();
+            } catch (IOException e) {
+                log.error("Failed to create report file: ", e);
+            }
+        }
+        //append to file
+        try {
+            PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(report, true)));
+            out.println(content);
+            out.close();
+        } catch (IOException e) {
+            log.error("Failed to generate report: ", e);
+        }
+    }
+
     public void logStats() {
-        log.info("{} STATS BEGIN\n {} STATS END {}", new Object[]{BANNER, toString(), BANNER});
+        String content = String.format("%s STATS BEGIN: %s --> %s\n %s STATS END %s",
+                BANNER, source, destination, toString(), BANNER);
+        log.info(content);
     }
 
     private long start = System.currentTimeMillis();
+    private Date startTime = new Date();
 
     public final AtomicLong objectsRead = new AtomicLong(0);
     public final AtomicLong objectsCopied = new AtomicLong(0);
@@ -55,6 +96,9 @@ public class MirrorStats {
     public static final long MINUTE = TimeUnit.MINUTES.toMillis(1);
     public static final long SECOND = TimeUnit.SECONDS.toMillis(1);
 
+    //add errorKeyList
+    public static final List errorKeyList = Collections.synchronizedList(new ArrayList());
+
     public String toString() {
         final long durationMillis = System.currentTimeMillis() - start;
         final double durationMinutes = durationMillis / 60000.0d;
@@ -62,7 +106,8 @@ public class MirrorStats {
         final double readRate = objectsRead.get() / durationMinutes;
         final double copyRate = objectsCopied.get() / durationMinutes;
         final double deleteRate = objectsDeleted.get() / durationMinutes;
-        return "read: " + objectsRead + "\n"
+        return "Started at: " + startTime.toString() + "\n"
+                + "read: " + objectsRead + "\n"
                 + "copied: " + objectsCopied + "\n"
                 + "copy errors: " + copyErrors + "\n"
                 + "deleted: " + objectsDeleted + "\n"
@@ -74,7 +119,9 @@ public class MirrorStats {
                 + "bytes copied: " + formatBytes(bytesCopied.get()) + "\n"
                 + "GET operations: " + getCount + "\n"
                 + "COPY operations: " + copyCount + "\n"
-                + "DELETE operations: " + deleteCount + "\n";
+                + "DELETE operations: " + deleteCount + "\n"
+                + "Error Key List: " + errorKeyList.toString() + "\n"
+                + "Ended at: " + (new Date()).toString() + "\n";
     }
 
     private String formatBytes(long bytesCopied) {

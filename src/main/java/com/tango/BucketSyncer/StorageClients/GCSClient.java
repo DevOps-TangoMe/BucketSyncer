@@ -24,9 +24,11 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.repackaged.com.google.common.base.Throwables;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.storage.Storage;
 import com.google.api.services.storage.StorageScopes;
+import com.tango.BucketSyncer.MirrorConstants;
 import com.tango.BucketSyncer.MirrorMain;
 import com.tango.BucketSyncer.MirrorOptions;
 import lombok.extern.slf4j.Slf4j;
@@ -42,16 +44,16 @@ public class GCSClient implements StorageClient {
     private HttpTransport gcsHttpTransport;
     private FileDataStoreFactory gcsDataStoreFactory;
     private final java.io.File GCS_DATA_STORE_DIR =
-            new java.io.File(System.getProperty("user.home"), ".store/BucketSyncer");
+            new java.io.File(System.getProperty("user.home"), MirrorConstants.GCS_CREDENTIAL_STORAGE_FILE);
     private final JsonFactory GCS_JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
 
-    public void createClient(MirrorOptions options) {
+    public void createClient(MirrorOptions options) throws IllegalStateException, IllegalArgumentException {
 
         //check Application Name
         if (options.getGCS_APPLICATION_NAME() == null) {
             log.error("Please provide application name for GCS");
-            System.exit(1);
+            throw new IllegalArgumentException("Please provide application name for GCS");
         }
 
         try {
@@ -62,9 +64,12 @@ public class GCSClient implements StorageClient {
             Credential gcsCredential = null;
             try {
                 gcsCredential = gcsAuthorize();
-            } catch (Exception e) {
-                log.error("Failed to create GCS client. Credentials for GCS maybe invalid: ", e);
-                System.exit(1);
+            } catch (IllegalArgumentException e){
+                log.error("Please provide valid GCS credentials");
+                Throwables.propagate(e);
+            }catch (Exception e) {
+                log.error("Failed to create GCS client. Credentials for GCS maybe invalid: {}", e);
+                throw new IllegalStateException("Failed to create GCS client. Credentials for GCS maybe invalid.");
             }
             // set up global Storage instance
             gcsClient = new Storage.Builder(gcsHttpTransport,
@@ -73,30 +78,38 @@ public class GCSClient implements StorageClient {
                     .setApplicationName(options.getGCS_APPLICATION_NAME())
                     .build();
         } catch (GeneralSecurityException e) {
-            log.error("Failed to create GCS client. Client_secret maybe invalid", e);
-            System.exit(1);
+            log.error("Failed to create GCS client. Client_secret maybe invalid: {}", e);
+            throw new IllegalStateException("Failed to create GCS client. Client_secret maybe invalid.");
+
         } catch (IOException e) {
             // Error formulating a HTTP request or reaching the HTTP service.
-            log.error("Failed to create GCS client.", e);
-            System.exit(1);
+            log.error("Failed to create GCS client: {}", e);
+            throw new IllegalStateException("Failed to create GCS client.");
         }
     }
 
     @Override
     public Object getClient(MirrorOptions options) {
-        createClient(options);
+        try {
+            createClient(options);
+        }catch (Exception e){
+            log.error("Failed to create GCS client: {}", e);
+            System.exit(1);
+        }
         return this.gcsClient;
     }
 
-    private Credential gcsAuthorize() throws IOException {
+    private Credential gcsAuthorize() throws IOException, IllegalArgumentException {
         // load client secrets
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(GCS_JSON_FACTORY,
                 new InputStreamReader(MirrorMain.class.getResourceAsStream("/gcscfg.json")));
         if (clientSecrets.getDetails().getClientId().startsWith("Enter") ||
                 clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
-            log.info("Enter Client ID and Secret from https://code.google.com/apis/console/?api=storage_api "
+            log.info("Enter CLIENT ID and Secret from https://code.google.com/apis/console/?api=storage_api "
                     + "into gcsClient-cmdline-sample/src/main/resources/gcscfg.json");
-            System.exit(1);
+            throw new IllegalArgumentException("Please provide credentials in src/main/resources/gcscfg.json");
+
+
         }
         // set up authorization code flow
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
@@ -108,7 +121,8 @@ public class GCSClient implements StorageClient {
         //check id and key are provided
         if (flow.getClientId() == null) {
             log.error("Please provide valid GCS credentials");
-            System.exit(1);
+            //System.exit(1);
+            throw new IllegalArgumentException("Please provide valid GCS credentials");
         }
 
         // gcsAuthorize

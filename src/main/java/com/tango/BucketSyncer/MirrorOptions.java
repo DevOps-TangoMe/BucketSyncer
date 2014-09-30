@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,8 +26,6 @@ import org.kohsuke.args4j.Option;
 import java.util.Date;
 
 public class MirrorOptions implements AWSCredentials {
-
-    public static final String S3_PROTOCOL_PREFIX = "s3://";
 
     public static final String AWS_ACCESS_KEY = "AWS_ACCESS_KEY_ID";
     public static final String AWS_SECRET_KEY = "AWS_SECRET_ACCESS_KEY";
@@ -217,14 +216,33 @@ public class MirrorOptions implements AWSCredentials {
     @Setter
     private boolean deleteRemoved = false;
 
-    @Argument(index = 0, required = true, usage = "source bucket[/source/prefix]")
+//    @Argument(index = 0, required = true, usage = "source bucket[/source/prefix]")
+//    @Getter
+//    @Setter
+//    private String source;
+
+
+//    @Argument(index = 1, required = true, usage = "destination bucket[/dest/prefix]")
+//    @Getter
+//    @Setter
+//    private String destination;
+
+    public static final String USAGE_SOURCE_BUCKET = "source bucket[/source/prefix]";
+    public static final String OPT_SOURCE_BUCKET = "-F";
+    public static final String LONGOPT_SOURCE_BUCKET = "--source_bucket";
+    @Option(name = OPT_SOURCE_BUCKET, aliases = LONGOPT_SOURCE_BUCKET, usage = USAGE_SOURCE_BUCKET, required = true)
     @Getter
     @Setter
     private String source;
-    @Argument(index = 1, required = true, usage = "destination bucket[/dest/prefix]")
+
+    public static final String USAGE_DESTINATION_BUCKET = "destination bucket[/destination/prefix]";
+    public static final String OPT_DESTINATION_BUCKET = "-T";
+    public static final String LONGOPT_DESTINATION_BUCKET = "--destination_bucket";
+    @Option(name = OPT_DESTINATION_BUCKET, aliases = LONGOPT_DESTINATION_BUCKET, usage = USAGE_DESTINATION_BUCKET, required = true)
     @Getter
     @Setter
     private String destination;
+
 
     @Getter
     private String sourceBucket;
@@ -296,7 +314,7 @@ public class MirrorOptions implements AWSCredentials {
         int slashPos;
 
         scrubbed = scrubS3ProtocolPrefix(source);
-        slashPos = scrubbed.indexOf('/');
+        slashPos = scrubbed.indexOf(MirrorConstants.SLASH);
         if (slashPos == -1) {
             sourceBucket = scrubbed;
         } else {
@@ -322,8 +340,8 @@ public class MirrorOptions implements AWSCredentials {
 
     protected String scrubS3ProtocolPrefix(String bucket) {
         bucket = bucket.trim();
-        if (bucket.startsWith(S3_PROTOCOL_PREFIX)) {
-            bucket = bucket.substring(S3_PROTOCOL_PREFIX.length());
+        if (bucket.startsWith(MirrorConstants.S3_PROTOCOL_PREFIX)) {
+            bucket = bucket.substring(MirrorConstants.S3_PROTOCOL_PREFIX.length());
         }
         return bucket;
     }

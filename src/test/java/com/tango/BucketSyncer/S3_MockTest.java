@@ -55,7 +55,7 @@ public class S3_MockTest {
     public void testSimpleCopy() throws Exception {
         S3ObjectSummary testObjectSummary = new S3ObjectSummary();
         final String key = "test_object";
-        final String[] args = {OPT_VERBOSE, SOURCE, DESTINATION};
+        final String[] args = {OPT_VERBOSE, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
         testObjectSummary.setETag("etag");
         testObjectSummary.setBucketName("source_bucket");
         testObjectSummary.setKey("test_object");
@@ -89,7 +89,7 @@ public class S3_MockTest {
         notCopyObjectSummary.setKey(notCopyKey);
         notCopyObjectSummary.setSize(Long.valueOf(10));
         notCopyObjectSummary.setLastModified(past);
-        final String[] args = {OPT_VERBOSE, OPT_CTIME, "10d", SOURCE, DESTINATION};
+        final String[] args = {OPT_VERBOSE, OPT_CTIME, "10d", OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION};
 
         List<S3ObjectSummary> objectSummaries = new ArrayList<S3ObjectSummary>();
         objectSummaries.add(copyObjectSummary);
@@ -119,7 +119,7 @@ public class S3_MockTest {
 
         //set up
         main = new MirrorMain(new String[]{OPT_VERBOSE,
-                OPT_DELETE_REMOVED, SOURCE, DESTINATION});
+                OPT_DELETE_REMOVED, OPT_SOURCE_BUCKET, SOURCE, OPT_DESTINATION_BUCKET, DESTINATION});
 
         main.parseArguments();
         main.setSourceClient(s3);

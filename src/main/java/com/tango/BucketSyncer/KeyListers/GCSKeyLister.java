@@ -99,10 +99,10 @@ public class GCSKeyLister extends KeyLister {
                 }
             }
         } catch (Exception e) {
-            log.error("Error in run loop, KeyLister thread now exiting: ", e);
+            log.error("Error in run loop, KEY_LISTER thread now exiting: {}", e);
         } finally {
             if (verbose) {
-                log.info("KeyLister run loop finished");
+                log.info("KEY_LISTER run loop finished");
             }
             done.set(true);
         }
@@ -114,7 +114,7 @@ public class GCSKeyLister extends KeyLister {
         final MirrorOptions options = context.getOptions();
         final boolean verbose = options.isVerbose();
         final int maxRetries = options.getMaxRetries();
-
+        Objects objects = null;
         Exception lastException = null;
         for (int tries = 0; tries < maxRetries; tries++) {
             Storage.Objects.List listObjects = null;
@@ -122,31 +122,34 @@ public class GCSKeyLister extends KeyLister {
                 listObjects = gcsClient.objects().list(bucket).setMaxResults(fetchSize).setPrefix(prefix);
             } catch (IOException e) {
                 lastException = e;
-                log.warn("gcsGetFirstBatch: error listing (try # {} ): ", tries, e);
-                if (Sleep.sleep(50)) {
-                    log.info("gcsGetFirstBatch: interrupted while waiting for next try");
-                    break;
-                }
-            }
-            Objects objects;
-            try {
-                context.getStats().getCount.incrementAndGet();
-                objects = listObjects.execute();
-                if (verbose) {
-                    log.info("successfully got first batch of objects from GCS (on try # {})", tries);
-                }
-                return objects;
-            } catch (IOException e) {
-                lastException = e;
-                log.warn("gcsGetFirstBatch: error listing (try # {}): ", tries, e);
+                log.warn("gcsGetFirstBatch: error listing (try # {} ): {}", tries, e);
                 if (Sleep.sleep(50)) {
                     log.info("gcsGetFirstBatch: interrupted while waiting for next try");
                     break;
                 }
             }
 
+            try {
+                context.getStats().getCount.incrementAndGet();
+                objects = listObjects.execute();
+                if (verbose) {
+                    log.info("successfully got first batch of objects from GCS (on try # {})", tries);
+                }
+                break;
+            } catch (IOException e) {
+                lastException = e;
+                log.warn("gcsGetFirstBatch: error listing (try # {}): {}", tries, e);
+                if (Sleep.sleep(50)) {
+                    log.info("gcsGetFirstBatch: interrupted while waiting for next try");
+                    break;
+                }
+            }
         }
-        throw new IllegalStateException("gcsGetFirstBatch: error listing: " + lastException, lastException);
+        if(objects != null){
+            return objects;
+        }else {
+            throw new IllegalStateException("gcsGetFirstBatch: error listing: " + lastException, lastException);
+        }
     }
 
     private Objects gcsGetNextBatch(String bucket, String prefix, Long fetchSize) {
@@ -156,6 +159,7 @@ public class GCSKeyLister extends KeyLister {
         final int maxRetries = options.getMaxRetries();
 
         Storage.Objects.List listObjects = null;
+        Objects next = null;
 
         for (int tries = 0; tries < maxRetries; tries++) {
             context.getStats().getCount.incrementAndGet();
@@ -167,11 +171,11 @@ public class GCSKeyLister extends KeyLister {
             listObjects.setPageToken(objects.getNextPageToken());
             try {
                 context.getStats().getCount.incrementAndGet();
-                Objects next = listObjects.execute();
+                next = listObjects.execute();
                 if (verbose) {
                     log.info("successfully got next batch of objects (on try # {} )", tries);
                 }
-                return next;
+                break;
             } catch (IOException e) {
                 log.error("GCS exception listing objects (try # {} ): {}", tries, e);
             }
@@ -180,7 +184,11 @@ public class GCSKeyLister extends KeyLister {
                 break;
             }
         }
-        throw new IllegalStateException(String.format("Too many errors trying to list objects (maxRetries= %d)", maxRetries));
+        if(next != null){
+            return next;
+        }else {
+            throw new IllegalStateException(String.format("Too many errors trying to list objects (maxRetries= %d)", maxRetries));
+        }
     }
 
 

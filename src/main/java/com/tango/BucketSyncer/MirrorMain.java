@@ -1,4 +1,5 @@
 /**
+ *  Copyright 2013 Jonathan Cobb
  *  Copyright 2014 TangoMe Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,6 +68,8 @@ public class MirrorMain {
     @Setter
     private Object destClient;
 
+    private static final String TITLE_BANNER = "   ***************   ";
+
 
     public MirrorMain(String[] args) {
         this.args = args;
@@ -94,6 +97,10 @@ public class MirrorMain {
 
             sourceClient = getSourceClient(options);
             context = new MirrorContext(options);
+            context.getStats().setSource(String.format("%s:%s",
+                    options.getSrcStore(), options.getSourceBucket()));
+            context.getStats().setDestination(String.format("%s:%s",
+                    options.getDestStore(), options.getDestinationBucket()));
 
             destClient = getDestClient(options);
             master = new MirrorMaster(sourceClient, destClient, context);
@@ -103,7 +110,6 @@ public class MirrorMain {
         }
 
     }
-
 
     protected void parseArguments() throws Exception {
         parser.parseArgument(args);
@@ -128,39 +134,21 @@ public class MirrorMain {
             throw new IllegalStateException("ENV vars not defined: " + MirrorOptions.AWS_ACCESS_KEY + " and/or " + MirrorOptions.AWS_SECRET_KEY);
         }
 
-        // sanity check for destination store and source store
-        // problem with the sanity check when sync to GCS
-
-//        if (options.getDestStore() != "S3" && options.getDestStore() != "GCS") {
-//            log.warn("Current DestStore: {}", options.getDestStore());
-//            throw new IllegalArgumentException("Destination store should be one of [S3|GCS]");
-//        }
-//        if (options.getSrcStore() != "S3") {
-//            log.warn("Current SrcStore: {}", options.getSrcStore());
-//            throw new IllegalArgumentException("Only S3 is supported for source store!");
-//        }
-        //need to have GCS_APPLICATION_NAME if sync from or to GCS
-//        if (options.getDestStore() == "GCS" || options.getSrcStore() == "GCS") {
-//            if (options.getGCS_APPLICATION_NAME() == null) {
-//                throw new IllegalArgumentException("Please provide GCS application name");
-//            }
-//        }
-
         options.initDerivedFields();
     }
 
     protected Object getSourceClient(MirrorOptions options) {
 
         String name = options.getSrcStore().toString().toUpperCase();
-        String clientName = name + "Client";
+        String clientName = String.format("%s%s", name, MirrorConstants.CLIENT);
         String packageName = this.getClass().getPackage().getName();
-        String className = String.format("%s.StorageClients.%s", packageName, clientName);
+        String className = String.format("%s.%s.%s", packageName, MirrorConstants.STORAGE_CLIENT,clientName);
 
         Class<?> clazz = null;
         try {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            log.error("Classname for SourceClient is not found. It is possible that this storage client has not been implemented as SourceClient: ", e);
+            log.error("Classname for SourceClient {} is not found. It is possible that this storage client has not been implemented as SourceClient: {}", className, e);
             Throwables.propagate(e);
         }
         StorageClient client = null;
@@ -178,14 +166,14 @@ public class MirrorMain {
 
     protected Object getDestClient(MirrorOptions options) {
         String name = options.getDestStore().toString().toUpperCase();
-        String clientName = name + "Client";
+        String clientName = String.format("%s%s", name, MirrorConstants.CLIENT);
         String packageName = this.getClass().getPackage().getName();
-        String className = String.format("%s.StorageClients.%s", packageName, clientName);
+        String className = String.format("%s.%s.%s", packageName, MirrorConstants.STORAGE_CLIENT,clientName);
         Class<?> clazz = null;
         try {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
-            log.error("Classname for DestClient is not found. It is possible that this storage client has not been implemented as DestClient: ", e);
+            log.error("Classname for DestClient {} is not found. It is possible that this storage client has not been implemented as DestClient: ", className, e);
             Throwables.propagate(e);
         }
         StorageClient client = null;

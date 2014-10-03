@@ -65,12 +65,11 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
                 return;
             }
             final ObjectMetadata sourceMetadata = getS3ObjectMetadata(options.getSourceBucket(), key, options);
-            final AccessControlList objectAcl = getAccessControlList(options, key);
 
             if (options.isDryRun()) {
                 log.info("Would have copied {} to destination: {}", key, keydest);
             } else {
-                if (keyCopied(sourceMetadata, objectAcl)) {
+                if (keyCopied(sourceMetadata)) {
                     context.getStats().objectsCopied.incrementAndGet();
                 } else {
                     context.getStats().copyErrors.incrementAndGet();
@@ -91,7 +90,7 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
         }
     }
 
-    boolean keyCopied(ObjectMetadata sourceMetadata, AccessControlList objectAcl) {
+    boolean keyCopied(ObjectMetadata sourceMetadata) {
         boolean copied = false;
         String key = summary.getKey();
         MirrorOptions options = context.getOptions();

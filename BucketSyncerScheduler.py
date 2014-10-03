@@ -305,7 +305,7 @@ def main():
     ctxt['notifiers'] = create_notifier(config, logger)
 
     # setup scheduler
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler({'apscheduler.timezone': 'UTC',})
     scheduler.add_job(bucket_sync, 'interval', seconds=interval)
     scheduler.add_job(reportGenerator, 'interval', seconds=reportInterval)
 

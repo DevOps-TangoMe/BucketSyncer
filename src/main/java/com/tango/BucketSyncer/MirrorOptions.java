@@ -216,17 +216,6 @@ public class MirrorOptions implements AWSCredentials {
     @Setter
     private boolean deleteRemoved = false;
 
-//    @Argument(index = 0, required = true, usage = "source bucket[/source/prefix]")
-//    @Getter
-//    @Setter
-//    private String source;
-
-
-//    @Argument(index = 1, required = true, usage = "destination bucket[/dest/prefix]")
-//    @Getter
-//    @Setter
-//    private String destination;
-
     public static final String USAGE_SOURCE_BUCKET = "source bucket[/source/prefix]";
     public static final String OPT_SOURCE_BUCKET = "-F";
     public static final String LONGOPT_SOURCE_BUCKET = "--source_bucket";

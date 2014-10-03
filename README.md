@@ -46,7 +46,7 @@ The above command requires that Maven 3 is installed.
 
 ### Usage
 
-    BucketSyncer.sh [options] <source-bucket>[/src-prefix/path/...] <destination-bucket>[/dest-prefix/path/...]
+    BucketSyncer.sh -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type>
 
 ### Options
 
@@ -141,4 +141,67 @@ BAD IDEA: If copying within a single bucket, do *not* put the destination below 
     BucketSyncer.sh source/foo source/foo/subfolder
     BucketSyncer.sh -p foo -d foo/subfolder source source
 *This might cause recursion and raise your AWS bill unnecessarily*
+
+
+### BucketSyncerScheduler 
+
+    ### Schedule BucketSyncer as a cron job, publish error report and regular report to AWS SNS
+    ### Usage
+    
+        Python ./BucketSyncerScheduler.py -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type> -i <time-interval>
+        
+    ### Options
+    -h, --help            : show this help message and exit
+    -F --source_bucket    : SOURCE_BUCKET
+                          Name of source bucket
+    -T --dest_bucket      : DEST_BUCKET
+                          Name of destination bucket
+    -A --gcs_app_name     : GCS_APP_NAME
+                          Name of GCS Application Name
+    -C, --cross_account_copy
+    -D --dest_store_type  : DEST_STORE_TYPE
+                          Destination cloud storage type. Default is S3
+    -c --ctime            : CTIME
+                          Only copy objects whose Last-Modified date is younger
+                          than this many days. For other time units, use these
+                          suffixes: y (years), M (months), d (days), w (weeks),
+                          h (hours), m (minutes), s (seconds)
+    -d --dest_prefix      : DEST_PREFIX
+                          Destination prefix
+    -e --endpoint         : ENDPOINT
+                          AWS endpoint
+    -i --interval         : INTERVAL
+                          Intervals (second) to run BucketSyncer. (Format
+                          example: 2s, 23m, 2h32m, 4:13, 5hr2m3s, 1.2 minutes)
+    -I --report_interval  : REPORT_INTERVAL
+                          Intervals (second) to report BucketSyncer status.
+                          Default is 4 hours.(Format example: 2s, 23m, 2h32m,
+                          4:13, 5hr2m3s, 1.2 minutes)
+    -m --max_connections  : MAX_CONNECTIONS
+                          Maximum number of connections to S3. Default is 100.
+    -n, --dry_run         : Show what would be done
+    -p --prefix           : PREFIX
+                          Only copy objects whose keys start with this prefix
+    -r --max_retries      : MAX_RETRIES
+                          Maximum number of retries for requests. Default is 5
+    -S --source_store_type: SOURCE_STORE_TYPE
+                          Source cloud storage type. Default is S3. Currently,
+                          only S3 is supported
+    -t --max_threads      : MAX_THREADS
+                          Maximum number of threads. Default is 100.
+    -u --upload_part_size : UPLOAD_PART_SIZE
+                          The upload size (in bytes) of each part uploaded as
+                          part of a multipart request for files that are greater
+                          than the max allowed file size of 5368709120 bytes
+                          (5GB). Defaults to 4294967296 bytes (4GB).
+    -v, --verbose         : Verbose output
+    -X, --delete_removed  : Delete objects from the destination bucket if they do
+                          not exist in the source bucket
+    -z --proxy            : PROXY
+                          host:port of proxy server to use. Defaults to
+                          proxy_host and proxy_port defined in
+                          src/main/resources/s3cfg.properties, or no proxy if
+                          these values are not found in s3cfg.properties
+
+
 

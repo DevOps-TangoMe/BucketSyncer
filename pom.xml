@@ -52,6 +52,8 @@ limitations under the License.
         <project.service.version>v1beta2-rev51-1.19.0</project.service.version>
         <project.guava.version>14.0.1</project.guava.version>
         <project.aws.version>1.8.9.1</project.aws.version>
+        <rpm.root.dir>/usr/local/BucketSyncer</rpm.root.dir>
+
     </properties>
 
     <dependencies>
@@ -180,7 +182,33 @@ limitations under the License.
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
+            <!--filter resources-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <!-- specify UTF-8, ISO-8859-1 or any other file encoding -->
+                    <encoding>UTF-8</encoding>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>resources</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Force Java 1.6 at all times -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -190,16 +218,6 @@ limitations under the License.
                     <source>1.6</source>
                     <target>1.6</target>
                     <showWarnings>true</showWarnings>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.3</version>
-                <configuration>
-                    <!-- specify UTF-8, ISO-8859-1 or any other file encoding -->
-                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
@@ -237,13 +255,87 @@ limitations under the License.
                 </executions>
             </plugin>
 
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2.2</version>
+                <!-- The configuration of the plugin -->
+                <configuration>
+                    <!-- Specifies the configuration file of the assembly plugin -->
+                    <descriptors>
+                        <descriptor>src/assembly/bin.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- The configuration of maven-jar-plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+            </plugin>
+
+            <!-- rpm maven plugin-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>rpm-maven-plugin</artifactId>
+                <version>2.1-alpha-1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>rpm</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <name>BucketSyncer</name>
+                    <copyright>2014, Tango</copyright>
+                    <distribution>Tango</distribution>
+                    <description>Bucket syncer between S3 and Google Cloud Storage</description>
+                    <group>Devops</group>
+                    <mappings>
+                        <mapping>
+                            <directory>${rpm.root.dir}/bin</directory>
+                            <filemode>0750</filemode>
+                            <sources>
+                                <source>
+                                    <location>src/main/resources</location>
+                                </source>
+                            </sources>
+                        </mapping>
+
+                        <mapping>
+                            <directory>${rpm.root.dir}/target</directory>
+                            <sources>
+                                <source>
+                                    <location>target/BucketSyncer-1.0.0-SNAPSHOT.jar</location>
+                                </source>
+                            </sources>
+                        </mapping>
+
+                        <mapping>
+                            <directory>${rpm.root.dir}/config</directory>
+                            <sources>
+                                <source>
+                                    <location>config</location>
+                                </source>
+                            </sources>
+                        </mapping>
+                    </mappings>
+                </configuration>
+            </plugin>
+
+
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
 
     </build>
 

@@ -96,7 +96,6 @@ public class S32GCSMirrorTest {
         }
     }
 
-    //@Ignore
     @Test
     public void testSimpleCopy() throws Exception {
         if (!checkEnvs()) return;
@@ -106,7 +105,6 @@ public class S32GCSMirrorTest {
         testSimpleCopyInternal(key, args);
     }
 
-    //@Ignore
     @Test
     public void testSkipCopyingNotChangedFile() throws Exception {
         if (!checkEnvs()) return;
@@ -120,7 +118,6 @@ public class S32GCSMirrorTest {
 
     }
 
-    //@Ignore
     @Test
     public void testSimpleCopyWithInlinePrefix() throws Exception {
         if (!checkEnvs()) return;
@@ -148,7 +145,6 @@ public class S32GCSMirrorTest {
         assertEquals(s32GCSTestFile.data.length(), gcsObject.getSize().intValue());
     }
 
-    //@Ignore
     @Test
     public void testSimpleCopyWithDestPrefix() throws Exception {
         if (!checkEnvs()) return;
@@ -158,7 +154,6 @@ public class S32GCSMirrorTest {
         testSimpleCopyWithDestPrefixInternal(key, destKey, args);
     }
 
-    //@Ignore
     @Test
     public void testSimpleCopyWithCtime() throws Exception {
         if (!checkEnvs()) return;
@@ -172,7 +167,7 @@ public class S32GCSMirrorTest {
         testSimpleCopyInternal(key2, args2);
     }
 
-    //@Ignore
+
     @Test
     public void testSimpleCopyWithInlineDestPrefix() throws Exception {
         if (!checkEnvs()) return;
@@ -200,7 +195,6 @@ public class S32GCSMirrorTest {
 
     }
 
-    //@Ignore
     @Test
     public void testDeleteRemoved() throws Exception {
         if (!checkEnvs()) return;

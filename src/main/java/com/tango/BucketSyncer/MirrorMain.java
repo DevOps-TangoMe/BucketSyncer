@@ -114,8 +114,17 @@ public class MirrorMain {
     protected void parseArguments() throws Exception {
         parser.parseArgument(args);
         if (!options.hasAwsKeys()) {
-            // try to load from src/main/resources/s3cfg.properties
-            @Cleanup BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/s3cfg.properties"));
+            // try to load from config/s3cfg.properties
+            File s3_config = null;
+            try {
+                s3_config = new File("config/s3cfg.properties");
+            }catch (Exception e){
+                log.error("Failed to find config file for s3 client ", e);
+                throw new IllegalArgumentException("Failed to find the config file for s3 client");
+            }
+
+            @Cleanup BufferedReader reader = new BufferedReader(new FileReader(s3_config));
+
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.trim().startsWith("access_key")) {

@@ -88,7 +88,7 @@ public class S32S3MirrorTest {
 
         testSimpleCopyInternal(key, args);
     }
-    //@Ignore
+
     @Test
     public void testSimpleCopyWithInlinePrefix() throws Exception {
         if (!checkEnvs()) return;
@@ -98,7 +98,7 @@ public class S32S3MirrorTest {
         testSimpleCopyInternal(key, args);
     }
 
-    //@Ignore
+
     @Test
     public void testSimpleCopyWithCtime() throws Exception {
         if (!checkEnvs()) return;

@@ -48,15 +48,18 @@ interval = None
 logger = None
 reportInterval = 14400
 
-JARFILE = None
-VERSION_ARG = None
+FULL_VERSION = '${project.version}'
+JARFILE = 'target/BucketSyncer-%s.jar' % FULL_VERSION
+VERSION_NO = FULL_VERSION[0:FULL_VERSION.find('-SNAPSHOT')]
+VERSION_ARG = '-DBucketSyncer.version=%s' % VERSION_NO
+cfg = 'config/config.cfg'
 
 ctxt = {
     'notifiers': {}
 }
 
-logFile = "BucketSyncer.log"
-reportFile = "Report.txt"
+logFile = "/var/log/BucketSyncer/BucketSyncer.log"
+reportFile = "/var/log/BucketSyncer/Report.txt"
 las_pos = None
 
 
@@ -184,23 +187,9 @@ def bucket_sync():
         reportGenerator()
         os._exit(1)
 
-def setUpJarFileAndVersionArg():
-    global JARFILE, VERSION_ARG
-    try:
-        version = ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version")
-    except Exception as e:
-        logger.error('SNAPSHOT file is not found: {0}'.format(e))
-        raise RuntimeError('SNAPSHOT file is not found')
-
-    version_no = version[0:version.find('-SNAPSHOT')]
-    JARFILE = 'target/BucketSyncer-%s-SNAPSHOT.jar' % version_no
-    VERSION_ARG = '-DBucketSyncer.version=%s' % version_no
-
-
 def main():
     global sourceClient, destClient, sourceBucket, destBucket, gcsAppName, verbose, deleteRemove, ctime, prefix, destPrefix, endpoint, maxConnection, dryRun, maxRetries, uploadPartSize, proxy, crossAccountCopy, maxThreads, logger, reportInterval
 
-    setUpJarFileAndVersionArg()
 
     parser = argparse.ArgumentParser(description='Sync Buckets Between Cloud Storage')
 
@@ -262,7 +251,7 @@ def main():
                         help='Delete objects from the destination bucket if they do not exist in the source bucket')
 
     parser.add_argument('-z', '--proxy',
-                        help='host:port of proxy server to use. Defaults to proxy_host and proxy_port defined in src/main/resources/s3cfg.properties, or no proxy if these values are not found in s3cfg.properties')
+                        help='host:port of proxy server to use. Defaults to proxy_host and proxy_port defined in config/s3cfg.properties, or no proxy if these values are not found in s3cfg.properties')
 
     options = parser.parse_args()
 
@@ -288,21 +277,18 @@ def main():
     if options.report_interval is not None:
         reportInterval = timeparse(options.report_interval)
 
-    # setup log
-    logging.config.fileConfig('config.cfg')
-    logger = logging.getLogger('MAIN.syncer')
-
-    # setup notifier
-    try:
-        dir, basename = os.path.split(__file__)
-        cfg = os.path.join(dir, 'config.cfg')
-    except Exception as e:
-        logger.warn('Could not find the config.cfg from package: {0}'.format(e))
-        raise RuntimeError('Could not find config.cfg')
-
+    # get config file, setup notifier
     config = ConfigParser.ConfigParser()
-    config.read(cfg)
+    try:
+        config.read(cfg)
+    except Exception as e:
+        logger.warn('Failed to read the config file')
+        raise RuntimeError('Failed to read the config file:{0}'.format(e))
     ctxt['notifiers'] = create_notifier(config, logger)
+
+    # setup log
+    logging.config.fileConfig(cfg)
+    logger = logging.getLogger('MAIN.syncer')
 
     # setup scheduler
     scheduler = BackgroundScheduler({'apscheduler.timezone': 'UTC',})

@@ -33,8 +33,7 @@ import com.tango.BucketSyncer.MirrorMain;
 import com.tango.BucketSyncer.MirrorOptions;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 
@@ -82,7 +81,6 @@ public class GCSClient implements StorageClient {
             throw new IllegalStateException("Failed to create GCS client. Client_secret maybe invalid.");
 
         } catch (IOException e) {
-            // Error formulating a HTTP request or reaching the HTTP service.
             log.error("Failed to create GCS client: {}", e);
             throw new IllegalStateException("Failed to create GCS client.");
         }
@@ -100,14 +98,24 @@ public class GCSClient implements StorageClient {
     }
 
     private Credential gcsAuthorize() throws IOException, IllegalArgumentException {
-        // load client secrets
+
+        //load the file
+        FileInputStream inputStream = null;
+        try {
+            File gcs_config = new File("config/gcscfg.json");
+            inputStream = new FileInputStream(gcs_config);
+        }catch (Exception e){
+            log.error("Failed to find the config file for gcs client: ", e);
+            throw new IllegalArgumentException("Failed to find the config file for gcs client");
+        }
+
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(GCS_JSON_FACTORY,
-                new InputStreamReader(MirrorMain.class.getResourceAsStream("/gcscfg.json")));
+                new InputStreamReader(inputStream));
         if (clientSecrets.getDetails().getClientId().startsWith("Enter") ||
                 clientSecrets.getDetails().getClientSecret().startsWith("Enter ")) {
             log.info("Enter CLIENT ID and Secret from https://code.google.com/apis/console/?api=storage_api "
-                    + "into gcsClient-cmdline-sample/src/main/resources/gcscfg.json");
-            throw new IllegalArgumentException("Please provide credentials in src/main/resources/gcscfg.json");
+                    + "into config/gcscfg.json");
+            throw new IllegalArgumentException("Please provide credentials in config/gcscfg.json");
 
 
         }
@@ -121,7 +129,6 @@ public class GCSClient implements StorageClient {
         //check id and key are provided
         if (flow.getClientId() == null) {
             log.error("Please provide valid GCS credentials");
-            //System.exit(1);
             throw new IllegalArgumentException("Please provide valid GCS credentials");
         }
 

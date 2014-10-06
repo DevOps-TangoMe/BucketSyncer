@@ -51,12 +51,12 @@ public class MirrorStats {
     private static final String BANNER = "\n--------------------------------------------------------------------\n";
 
     public void generateReport() {
-        //String content = String.format("{} STATS BEGIN\n {} STATS END {}", new Object[]{BANNER, toString(), BANNER});
         String content = String.format("%s STATS BEGIN: %s --> %s\n %s STATS END %s",
                                        BANNER, source, destination, toString(), BANNER);
         File report = new File(MirrorConstants.REPORT);
         if (!report.exists()) {
             try {
+                report.getParentFile().mkdirs();
                 report.createNewFile();
             } catch (IOException e) {
                 log.error("Failed to create report file: ", e);

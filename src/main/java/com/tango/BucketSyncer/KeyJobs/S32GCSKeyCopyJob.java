@@ -242,8 +242,6 @@ public class S32GCSKeyCopyJob extends S32GCSKeyJob {
         return !sourceFingerprint.equals(destFingerprint);
     }
 
-    /*copy from google api sample: https://code.google.com/p/google-api-java-client/source/browse/storage-cmdline-sample/src/main/java/com/google/api/services/samples/storage/cmdline/StorageSample.java?repo=samples&r=3c0563b18af378906144f9eec0979b0a1427352b
-     */
 
     private static class CustomUploadProgressListener implements MediaHttpUploaderProgressListener {
         private final Stopwatch stopwatch = new Stopwatch();

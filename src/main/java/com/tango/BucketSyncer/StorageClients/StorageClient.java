@@ -19,7 +19,5 @@ import com.tango.BucketSyncer.MirrorOptions;
 
 public interface StorageClient {
 
-    //void createClient(MirrorOptions options);
-
     Object getClient(MirrorOptions options);
 }

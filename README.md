@@ -26,17 +26,17 @@ BucketSyncer was inspired by [s3s3mirror](https://github.com/cobbzilla/s3s3mirro
 ### AWS Credentials
 
 * BucketSyncer will first look for credentials in your system environment. If variables named AWS\_ACCESS\_KEY\_ID and AWS\_SECRET\_ACCESS\_KEY are defined, then these will be used.
-* Next, it checks for s3cfg.properties file under src/main/resources. If present, the access key and secret key are read from there.
+* Next, it checks for s3cfg.properties file under config. If present, the access key and secret key are read from there.
 * If neither of the above is found, it will error out and refuse to run.
 
 ### Google Cloud Storage Credentials
 
-* BucketSyncer reads Google Cloud Storage Credentials from gcscfg.json under resources directory.
+* BucketSyncer reads Google Cloud Storage Credentials from gcscfg.json under config directory.
 
 
 ### System Requirements
 
-* Java 6 or later
+* Java 7
 
 ### Building
 
@@ -45,8 +45,9 @@ BucketSyncer was inspired by [s3s3mirror](https://github.com/cobbzilla/s3s3mirro
 The above command requires that Maven 3 is installed.
 
 ### Usage
+    Run "mvn package" to build the project and then copy the *.zip or *.tar.gz in the target directory to anywhere you want. Unzip/Untar the file and execute the following commands as sudo user
 
-    BucketSyncer.sh -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type>
+    sudo ./bin/BucketSyncer.sh -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type>
 
 ### Options
 
@@ -63,7 +64,7 @@ The above command requires that Maven 3 is installed.
                                       Default is false (copying within same
                                       account, preserving ACLs across copies). If
                                       this option is active, we give full access
-                                      to owner of the destination bucket.
+                                      to owner of the destination bucket. (Not supported yet) 
     -D (--dest-store) VAL           : Destination storage type [S3|GCS].
                                       Destination store will be default to 'S3' if
                                       not specified)
@@ -98,7 +99,7 @@ The above command requires that Maven 3 is installed.
     -v (--verbose)                  : Verbose output
     -z (--proxy) VAL                : host:port of proxy server to use. Defaults
                                       to proxy_host and proxy_port defined in
-                                      src/main/resources/s3cfg.properties, or no proxy if these values are
+                                      config/s3cfg.properties, or no proxy if these values are
                                       not found in s3cfg.properties 
 
 ### Examples
@@ -147,8 +148,12 @@ BAD IDEA: If copying within a single bucket, do *not* put the destination below 
 
     ### Schedule BucketSyncer as a cron job, publish error report and regular report to AWS SNS
     ### Usage
+        
+        config BucketSyncerScheduler by entering the SNS credentials in config/config.cfg
     
-        Python ./BucketSyncerScheduler.py -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type> -i <time-interval>
+        Run "mvn package" to build the project and then copy the *.zip or *.tar.gz in the target directory to anywhere you want. Unzip/Untar the file and execute the following commands as sudo user
+        
+        sudo python ./bin/BucketSyncerScheduler.py -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type> -i <time-interval>
         
     ### Options
     -h, --help            : show this help message and exit
@@ -200,7 +205,7 @@ BAD IDEA: If copying within a single bucket, do *not* put the destination below 
     -z --proxy            : PROXY
                           host:port of proxy server to use. Defaults to
                           proxy_host and proxy_port defined in
-                          src/main/resources/s3cfg.properties, or no proxy if
+                          config/s3cfg.properties, or no proxy if
                           these values are not found in s3cfg.properties
 
 

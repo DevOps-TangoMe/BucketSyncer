@@ -14,18 +14,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 THISDIR=$(dirname $0)
-cd ${THISDIR}
 THISDIR=$(pwd)
 
+#1.0.0-SNAPSHOT
+FULLVERSION=${project.version}
 
+VERSION=${FULLVERSION%"-SNAPSHOT"}
 
-VERSION=`python -c 'from xml.etree.ElementTree import ElementTree; version = ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version"); print version[0:version.find("-SNAPSHOT")]'`
-
-VERSION_FULL=`python -c 'from xml.etree.ElementTree import ElementTree; version = ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version"); print version'`
-
-
-JARFILE=target/BucketSyncer-${VERSION_FULL}.jar
-VERSION_ARG="-DBucketSyncer.version=${VERSION}"
+JARFILE=target/BucketSyncer-$FULLVERSION.jar
+VERSION_ARG="-DBucketSyncer.version=$VERSION"
 
 DEBUG=$1
 if [ "${DEBUG}" = "--debug" ] ; then

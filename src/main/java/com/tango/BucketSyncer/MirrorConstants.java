@@ -42,11 +42,8 @@ public class MirrorConstants {
     public static final String S3_PROTOCOL_PREFIX = "s3://";
     public static final String SLASH = "/";
 
-    public static final String REPORT = "Report.txt";
+    public static final String REPORT = "/var/log/BucketSyncer/Report.txt";
     public static final Charset UTF8 = StandardCharsets.UTF_8;
-
-
-
 
 
 }

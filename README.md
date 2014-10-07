@@ -54,8 +54,8 @@ The above command requires that Maven 3 is installed.
 
 ### Options
 
-    VAL                             : source bucket[/source/prefix]
-    VAL                             : destination bucket[/dest/prefix]
+    -F                              : source bucket[/source/prefix]
+    -T                              : destination bucket[/dest/prefix]
     -A (--gcs-application-name) VAL : Be sure to specify the name of your
                                       application. If the application name is null
                                       or blank, the application will log a
@@ -109,41 +109,41 @@ The above command requires that Maven 3 is installed.
 
 Copy everything from a bucket named "source" to another bucket named "dest"
 
-    BucketSyncer.sh source dest
+    BucketSyncer.sh -F source -T dest
 
 Copy everything from "source" to "dest", but only copy objects created or modified within the past week
 
-    BucketSyncer.sh -c 7 source dest
-    BucketSyncer.sh -c 7d source dest
-    BucketSyncer.sh -c 1w source dest
-    BucketSyncer.sh --ctime 1w source dest
+    BucketSyncer.sh -c 7 -F source -T dest
+    BucketSyncer.sh -c 7d -F source -T dest
+    BucketSyncer.sh -c 1w -F source -T dest
+    BucketSyncer.sh --ctime 1w -F source -T dest
 
 Copy everything from "source/foo" to "dest/bar"
 
-    BucketSyncer.sh source/foo dest/bar
-    BucketSyncer.sh -p foo -d bar source dest
+    BucketSyncer.sh -F source/foo -T dest/bar
+    BucketSyncer.sh -p foo -d bar -F source -T dest
 
 Copy everything from "source/foo" to "dest/bar" and delete anything in "dest/bar" that does not exist in "source/foo"
 
-    BucketSyncer.sh -X source/foo dest/bar
-    BucketSyncer.sh --delete-removed source/foo dest/bar
-    BucketSyncer.sh -p foo -d bar -X source dest
-    BucketSyncer.sh -p foo -d bar --delete-removed source dest
+    BucketSyncer.sh -X -F source/foo -T dest/bar
+    BucketSyncer.sh --delete-removed -F source/foo -T dest/bar
+    BucketSyncer.sh -p foo -d bar -X -F source -T dest
+    BucketSyncer.sh -p foo -d bar --delete-removed -F source -T dest
 
 Copy within a single bucket -- copy everything from "source/foo" to "source/bar"
 
-    BucketSyncer.sh source/foo source/bar
-    BucketSyncer.sh -p foo -d bar source source
+    BucketSyncer.sh -F source/foo -T source/bar
+    BucketSyncer.sh -p foo -d bar -F source -T source
     
 Copy from S3 to Google Cloud Storage bucket -- copy everything from "source/foo" to "source/bar"
 
-     BucketSyncer.sh source/foo source/bar -S S3 -D GCS
-     BucketSyncer.sh -p foo -d bar source source -S S3 -D GCS
+     BucketSyncer.sh -F source/foo -T source/bar -S S3 -D GCS
+     BucketSyncer.sh -p foo -d bar -F source -T source -S S3 -D GCS
 
 BAD IDEA: If copying within a single bucket, do *not* put the destination below the source
 
-    BucketSyncer.sh source/foo source/foo/subfolder
-    BucketSyncer.sh -p foo -d foo/subfolder source source
+    BucketSyncer.sh -F source/foo -T source/foo/subfolder
+    BucketSyncer.sh -p foo -d foo/subfolder -F source -T source
 *This might cause recursion and raise your AWS bill unnecessarily*
 
 

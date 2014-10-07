@@ -18,10 +18,8 @@ import subprocess
 import logging, logging.config
 import argparse
 from pytimeparse.timeparse import timeparse
-from subprocess import CalledProcessError, check_output
+from subprocess import CalledProcessError
 from notifier.notifier import create as create_notifier
-from xml.etree.ElementTree import ElementTree
-from future import *
 import ConfigParser
 
 from apscheduler.schedulers.background import BackgroundScheduler

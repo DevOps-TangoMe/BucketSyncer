@@ -20,12 +20,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import copy
 import datetime
 import pprint
-import traceback
 import urllib
 import json
 
 from helper.http import http_get, http_post, do_request
-from notifier import Notifier, Alert
+from notifier import Notifier
 
 class PagerDuty(Notifier):
 
@@ -55,6 +54,7 @@ class PagerDuty(Notifier):
         self._app_processed = {}
         self._retry_total = int(kwargs.get('retry_total', 1))
         self._retry_interval = int(kwargs.get('retry_interval', 3))
+        self._get_request_url = int(kwargs.get('get_request_url', None))
 
         if self._outstanding_incidents_prefix and not self._outstanding_incidents_prefix.startswith(os.path.sep):
             self._outstanding_incidents_prefix = os.path.join(os.path.dirname(__file__), self._outstanding_incidents_prefix)
@@ -137,7 +137,7 @@ class PagerDuty(Notifier):
         for alert in alerts:
             key = '{0}@{1}'.format(alert.app if alert.app else self._level, alert.instance)
             incident = incidents.setdefault(key, { 'incident_key': key, 'event_type': 'trigger', 
-                'description': '{0} {2}! {1} New Relic Alert: {3}({4})'.format('ATTENTION' if alert.level == 'caution' else 'CRITICAL', alert.instance, alert.metric, alert.value, alert.threshold),
+                'description': '{0} {2}! {1} Alert: {3}({4})'.format('ATTENTION' if alert.level == 'caution' else 'CRITICAL', alert.instance, alert.metric, alert.value, alert.threshold),
                 'details' : [],
                 'time_occurred': datetime.datetime.utcnow(),
                 'reported': False,
@@ -200,7 +200,7 @@ class PagerDuty(Notifier):
             app_incidents = []
             try:
                 while True:
-                    resp = http_get('https://tango.pagerduty.com/api/v1/incidents?' + urllib.urlencode(qs), **self._http_base_params()) 
+                    resp = http_get(self._get_request_url + urllib.urlencode(qs), **self._http_base_params())
                     if resp:
                         _incidents = resp.get('incidents', [])
                         app_incidents += _incidents
@@ -215,7 +215,7 @@ class PagerDuty(Notifier):
                 self._warn("failed to poll app status: {0}".format(e)) 
 
             self._app_processed[key] = app_incidents
-            self._debug("total # of New Relic app-level alerts found between {0} and {1}: {2}".format(since_time, until_time, len(app_incidents)))
+            self._debug("total # of alerts found between {0} and {1}: {2}".format(since_time, until_time, len(app_incidents)))
 
         for _incident in self._app_processed.get(key, []):
             if incident['app'] in _incident['trigger_summary_data']['description']:
@@ -237,7 +237,7 @@ class PagerDuty(Notifier):
             try:
                 ## whether this incident has been reported or not
                 qs = { 'fields': 'incident_number,status', 'incident_key': incident['incident_key'], 'status': 'acknowledged' }
-                resp = http_get('https://tango.pagerduty.com/api/v1/incidents?' + urllib.urlencode(qs), **self._http_base_params()) 
+                resp = http_get(self._get_request_url + urllib.urlencode(qs), **self._http_base_params())
                 if resp and resp['incidents']:
                     self._info("incident: {1} ALREADY ACKnowledged: {0}!!!".format(resp['incidents'][0], incident['incident_key']))
 

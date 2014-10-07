@@ -24,8 +24,8 @@ class AmazonSNS(Notifier):
         super(AmazonSNS, self).__init__()
         self._level = kwargs.get('level', 'caution')
         self._conn = boto.sns.connect_to_region(kwargs.get('aws_region', 'us-west-2'),
-                aws_access_key_id = kwargs.get('aws_access_key_id', None),
-                aws_secret_access_key = kwargs.get('aws_secret_access_key', None))
+                                                aws_access_key_id = kwargs.get('aws_access_key_id', None),
+                                                aws_secret_access_key = kwargs.get('aws_secret_access_key', None))
         self._sns_topic = kwargs.get('sns_topic_{0}'.format(self._level), None)
 
 
@@ -42,7 +42,7 @@ class AmazonSNS(Notifier):
 
         self._info("publishing to amazon sns topic: {0} level: {1}".format(self._sns_topic, self._level))
 
-        subject = '{0}: some New Relic metrics on failing'.format(self._level.upper())
+        subject = 'Incident Level :{0}'.format(self._level.upper())
         msgs = [ alert.summary() for alert in alerts ]
 
         return self._conn.publish(topic=self._sns_topic, subject=subject, message='\n\n'.join(msgs))
@@ -65,5 +65,4 @@ class AmazonSNS(Notifier):
             raise RuntimeError('{0} connection is not established'.format(self))
 
         return self._conn.publish(topic=self._sns_topic, subject=subject, message=message)
-
 

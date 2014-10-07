@@ -46,8 +46,11 @@ The above command requires that Maven 3 is installed.
 
 ### Usage
     Run "mvn package" to build the project and then copy the *.zip or *.tar.gz in the target directory to anywhere you want. Unzip/Untar the file and execute the following commands as sudo user
+    
+    Or after building the project with "mvn package", RPM install BucketSyncer/target/rpm/BucketSyncer/RPMS/noarch/BucketSyncer-*.noarch.rpm, and it will install the package under /usr/local/BucketSyncer. Run the following commands as sudo user.
 
     sudo ./bin/BucketSyncer.sh -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type>
+    
 
 ### Options
 
@@ -152,6 +155,7 @@ BAD IDEA: If copying within a single bucket, do *not* put the destination below 
         config BucketSyncerScheduler by entering the SNS credentials in config/config.cfg
     
         Run "mvn package" to build the project and then copy the *.zip or *.tar.gz in the target directory to anywhere you want. Unzip/Untar the file and execute the following commands as sudo user
+        Or after building the project with "mvn package", RPM install BucketSyncer/target/rpm/BucketSyncer/RPMS/noarch/BucketSyncer-*.noarch.rpm, and it will install the package under /usr/local/BucketSyncer. Run the following commands as sudo user.
         
         sudo python ./bin/BucketSyncerScheduler.py -F <source-bucket> -T <destination-bucket> -S <source-storage-type> -D <dest-storage-type> -i <time-interval>
         

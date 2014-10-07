@@ -46,6 +46,12 @@ limitations under the License.
         <powermock-mockito.version>1.5.5</powermock-mockito.version>
         <args4j-version>2.0.23</args4j-version>
         <joda-time-version>2.3</joda-time-version>
+        <maven-resources-version>2.3</maven-resources-version>
+        <maven-compiler-version>2.3.2</maven-compiler-version>
+        <maven-shade-version>2.1</maven-shade-version>
+        <maven-assembly-version>2.2.2</maven-assembly-version>
+        <maven-jar-version>2.3.1</maven-jar-version>
+        <rpm-maven-version>2.1-alpha-1</rpm-maven-version>
         <project.http.version>1.19.0</project.http.version>
         <project.oauth.version>1.19.0</project.oauth.version>
         <project.api.version>1.19.0</project.api.version>
@@ -194,7 +200,7 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.3</version>
+                <version>${maven-resources-version}</version>
                 <configuration>
                     <!-- specify UTF-8, ISO-8859-1 or any other file encoding -->
                     <encoding>UTF-8</encoding>
@@ -213,7 +219,7 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>${maven-compiler-version}</version>
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
@@ -224,7 +230,7 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.1</version>
+                <version>${maven-shade-version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -259,7 +265,7 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2.2</version>
+                <version>${maven-assembly-version}</version>
                 <!-- The configuration of the plugin -->
                 <configuration>
                     <!-- Specifies the configuration file of the assembly plugin -->
@@ -280,14 +286,14 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.1</version>
+                <version>${maven-jar-version}</version>
             </plugin>
 
             <!-- rpm maven plugin-->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>rpm-maven-plugin</artifactId>
-                <version>2.1-alpha-1</version>
+                <version>${rpm-maven-version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -308,7 +314,13 @@ limitations under the License.
                             <filemode>0750</filemode>
                             <sources>
                                 <source>
-                                    <location>src/main/resources</location>
+                                    <location>target/classes</location>
+                                    <includes>
+                                        <include>*.sh</include>
+                                        <include>*.py</include>
+                                        <include>*.xml</include>
+                                        <include>notifier/*</include>
+                                    </includes>
                                 </source>
                             </sources>
                         </mapping>
@@ -317,7 +329,7 @@ limitations under the License.
                             <directory>${rpm.root.dir}/target</directory>
                             <sources>
                                 <source>
-                                    <location>target/BucketSyncer-1.0.0-SNAPSHOT.jar</location>
+                                    <location>target/${project.artifactId}-${project.version}.jar</location>
                                 </source>
                             </sources>
                         </mapping>

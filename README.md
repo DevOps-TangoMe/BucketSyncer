@@ -150,6 +150,12 @@ BAD IDEA: If copying within a single bucket, do *not* put the destination below 
 ### BucketSyncerScheduler 
 
     ### Schedule BucketSyncer as a cron job, publish error report and regular report to AWS SNS
+    
+    ### System Requirements
+        python 2.7
+        required modules: future, pytimeparse, boto, APScheduler
+        * Avoid using pip to install APScheduler. Download source code from https://pypi.python.org/pypi/APScheduler/ and do "setup.py develop" to install. Otherwise it will return "No trigger by the name "interval" was found".
+        
     ### Usage
         
         config BucketSyncerScheduler by entering the SNS credentials in config/config.cfg

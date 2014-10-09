@@ -314,7 +314,7 @@ limitations under the License.
                             <filemode>0750</filemode>
                             <sources>
                                 <source>
-                                    <location>target/classes</location>
+                                    <location>${project.build.outputDirectory}</location>
                                     <includes>
                                         <include>*.sh</include>
                                         <include>*.py</include>
@@ -346,7 +346,6 @@ limitations under the License.
                     </mappings>
                 </configuration>
             </plugin>
-
 
         </plugins>
 

@@ -177,13 +177,18 @@ def bucket_sync():
         logger.info(command_list)
 
     # exit when BucketSyncer exit with exit code 1
+    # catch System.out.println from Google cloud libraries during authentication
+
     try:
-        subprocess.check_output(command_list)
+        p = subprocess.Popen(command_list, stdout=subprocess.PIPE)
     except CalledProcessError as e:
         logger.info('BucketSyncer exited.')
         logReportGenerator()
         reportGenerator()
         os._exit(1)
+    for line in iter(p.stdout.readline, b''):
+        logger.warn(">>> " + line.rstrip())
+
 
 def main():
     global sourceClient, destClient, sourceBucket, destBucket, gcsAppName, verbose, deleteRemove, ctime, prefix, destPrefix, endpoint, maxConnection, dryRun, maxRetries, uploadPartSize, proxy, crossAccountCopy, maxThreads, logger, reportInterval

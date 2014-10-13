@@ -12,8 +12,6 @@ An object will be copied if and only if at least one of the following holds true
 
 When copying, the source metadata and ACL lists are also copied to the destination object.
 
-Note: when syncing from S3 to Google Cloud Storage, please make sure that at least one browser is installed. Google Cloud Storage requires two-step authentication.
-
 License
 -------
 
